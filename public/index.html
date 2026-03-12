@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>♟ Multiplayer Chess</title>
+
+  <!-- Socket.IO client: lets the browser talk to our Node server in real-time -->
+  <script src="/socket.io/socket.io.js"></script>
+
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Crimson+Pro:ital,wght@0,300;0,400;1,300&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <header>
+    <h1>♟ Royal Chess</h1>
+    <p class="subtitle">Two-player · Real-time · Browser</p>
+  </header>
+
+  <!-- ── LOBBY ─────────────────────────────────────────── -->
+  <div id="lobby">
+    <h2>Join a Game</h2>
+    <div class="input-group">
+      <label>Room ID</label>
+      <input type="text" id="room-input" placeholder="e.g. room42" maxlength="20" />
+    </div>
+    <button class="btn btn-primary" onclick="joinRoom()">Enter Room</button>
+    <p class="hint">
+      Share the same Room ID with a friend to play together.<br>
+      Two different tabs on the same computer also works!
+    </p>
+  </div>
+
+  <!-- ── GAME ──────────────────────────────────────────── -->
+  <div id="game">
+    <!-- Status bar -->
+    <div id="status-bar">
+      <div class="player-tag">
+        <div class="color-dot" id="my-dot"></div>
+        <span id="my-color-label">You</span>
+      </div>
+      <span id="status-msg">Connecting…</span>
+      <div class="turn-indicator" id="turn-badge">—</div>
+    </div>
+
+    <!-- Board with coordinate labels -->
+    <div class="board-wrapper">
+      <div class="coord-labels" id="rank-labels"></div>
+      <div class="board-col">
+        <div id="board"></div>
+        <div class="col-labels" id="file-labels"></div>
+      </div>
+    </div>
+
+    <!-- Move log -->
+    <div id="move-log-wrap">
+      <h4>Move History</h4>
+      <div id="move-log"></div>
+    </div>
+  </div>
+
+  <!-- ── OVERLAY (game over / waiting) ─────────────────── -->
+  <div id="overlay">
+    <div class="overlay-box">
+      <h2 id="overlay-title">—</h2>
+      <p  id="overlay-body">—</p>
+      <button class="btn btn-primary" onclick="location.reload()">Play Again</button>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
