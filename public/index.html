@@ -3,11 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>♟ Multiplayer Chess</title>
-
-  <!-- Socket.IO client: lets the browser talk to our Node server in real-time -->
+  <title>♟ Royal Chess</title>
   <script src="/socket.io/socket.io.js"></script>
-
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Crimson+Pro:ital,wght@0,300;0,400;1,300&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css" />
 </head>
@@ -20,21 +17,56 @@
 
   <!-- ── LOBBY ─────────────────────────────────────────── -->
   <div id="lobby">
-    <h2>Join a Game</h2>
-    <div class="input-group">
-      <label>Room ID</label>
-      <input type="text" id="room-input" placeholder="e.g. room42" maxlength="20" />
+
+    <!-- Mode Selection -->
+    <div id="mode-select">
+      <h2>Choose Your Game</h2>
+      <div class="mode-cards">
+        <button class="mode-card" id="btn-vs-human" onclick="selectMode('human')">
+          <span class="mode-icon">⚔️</span>
+          <span class="mode-title">vs Player</span>
+          <span class="mode-desc">Play with a friend online</span>
+        </button>
+        <button class="mode-card" id="btn-vs-cpu" onclick="selectMode('cpu')">
+          <span class="mode-icon">🤖</span>
+          <span class="mode-title">vs Computer</span>
+          <span class="mode-desc">Challenge the AI engine</span>
+        </button>
+      </div>
     </div>
-    <button class="btn btn-primary" onclick="joinRoom()">Enter Room</button>
-    <p class="hint">
-      Share the same Room ID with a friend to play together.<br>
-      Two different tabs on the same computer also works!
-    </p>
+
+    <!-- Human room panel -->
+    <div id="panel-human" class="lobby-panel" style="display:none;">
+      <button class="back-btn" onclick="goBack()">← Back</button>
+      <h2>Join a Room</h2>
+      <div class="input-group">
+        <label>Room ID</label>
+        <input type="text" id="room-input" placeholder="e.g. room42" maxlength="20" />
+      </div>
+      <button class="btn btn-primary" onclick="joinRoom()">Enter Room</button>
+      <p class="hint">Share the same Room ID with a friend.<br>Two tabs on the same computer also works!</p>
+    </div>
+
+    <!-- CPU panel -->
+    <div id="panel-cpu" class="lobby-panel" style="display:none;">
+      <button class="back-btn" onclick="goBack()">← Back</button>
+      <h2>Play vs Computer</h2>
+      <div class="input-group">
+        <label>Difficulty</label>
+        <div class="difficulty-select">
+          <button class="diff-btn active" data-diff="easy"   onclick="setDifficulty('easy')">Easy</button>
+          <button class="diff-btn"        data-diff="medium" onclick="setDifficulty('medium')">Medium</button>
+          <button class="diff-btn"        data-diff="hard"   onclick="setDifficulty('hard')">Hard</button>
+        </div>
+      </div>
+      <div class="diff-description" id="diff-desc">Casual play — great for beginners.</div>
+      <button class="btn btn-primary" onclick="joinComputer()">Start Game</button>
+    </div>
+
   </div>
 
   <!-- ── GAME ──────────────────────────────────────────── -->
   <div id="game">
-    <!-- Status bar -->
     <div id="status-bar">
       <div class="player-tag">
         <div class="color-dot" id="my-dot"></div>
@@ -44,7 +76,12 @@
       <div class="turn-indicator" id="turn-badge">—</div>
     </div>
 
-    <!-- Board with coordinate labels -->
+    <!-- Thinking indicator -->
+    <div id="thinking-bar" style="display:none;">
+      <div class="thinking-dots"><span></span><span></span><span></span></div>
+      <span>Computer is thinking…</span>
+    </div>
+
     <div class="board-wrapper">
       <div class="coord-labels" id="rank-labels"></div>
       <div class="board-col">
@@ -53,14 +90,13 @@
       </div>
     </div>
 
-    <!-- Move log -->
     <div id="move-log-wrap">
       <h4>Move History</h4>
       <div id="move-log"></div>
     </div>
   </div>
 
-  <!-- ── OVERLAY (game over / waiting) ─────────────────── -->
+  <!-- ── OVERLAY ────────────────────────────────────────── -->
   <div id="overlay">
     <div class="overlay-box">
       <h2 id="overlay-title">—</h2>
