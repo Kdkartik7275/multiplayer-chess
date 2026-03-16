@@ -243,7 +243,7 @@ function startTimer(){
 function stopTimer(){ if(timerInterval){clearInterval(timerInterval);timerInterval=null;} }
 
 // ══════════════════════════════════════════════════════
-//  BOARD
+//  BOARD RENDER + PIECE ANIMATION
 // ══════════════════════════════════════════════════════
 function buildLabels(){
   const ranks=document.getElementById('rank-labels'),files=document.getElementById('file-labels');
@@ -252,6 +252,7 @@ function buildLabels(){
   for(let i=0;i<8;i++){const s=document.createElement('span');s.textContent=myColor==='black'?FILES[7-i]:FILES[i];files.appendChild(s);}
 }
 
+/* Render the board statically (no animation) */
 function renderBoard(bd, overrideCheck){
   const el=document.getElementById('board'); el.innerHTML='';
   const chk=overrideCheck!==undefined?overrideCheck:checkSquare;
@@ -279,14 +280,95 @@ function renderBoard(bd, overrideCheck){
   }));
 }
 
+/* Get pixel rect of a board square */
+function getSquareRect(row, col) {
+  const boardEl = document.getElementById('board');
+  const boardRect = boardEl.getBoundingClientRect();
+  const sqSize = boardRect.width / 8;
+
+  const dispRow = myColor === 'black' ? (7 - row) : row;
+  const dispCol = myColor === 'black' ? (7 - col) : col;
+
+  return {
+    left: boardRect.left + dispCol * sqSize,
+    top:  boardRect.top  + dispRow * sqSize,
+    size: sqSize,
+  };
+}
+
+/* Animate piece sliding from fromSquare to toSquare.
+   Uses transform:translate so it works on all browsers including iOS Safari.
+   Calls done() after animation completes. */
+function animatePieceMove(piece, fromRow, fromCol, toRow, toCol, done) {
+  const fromRect = getSquareRect(fromRow, fromCol);
+  const toRect   = getSquareRect(toRow,   toCol);
+  const isWhite  = piece === piece.toUpperCase();
+  const sz       = fromRect.size;
+
+  // dx/dy: how far the flyer needs to travel
+  const dx = toRect.left - fromRect.left;
+  const dy = toRect.top  - fromRect.top;
+
+  // Build the flyer element — positioned exactly over the FROM square
+  const flyer = document.createElement('span');
+  flyer.className = 'piece-flyer ' + (isWhite ? 'white' : 'black');
+  flyer.textContent = GLYPHS[piece] || piece;
+  flyer.style.cssText = [
+    'left:'    + fromRect.left + 'px',
+    'top:'     + fromRect.top  + 'px',
+    'width:'   + sz + 'px',
+    'height:'  + sz + 'px',
+    'font-size:' + (sz * 0.74) + 'px',
+    'transform:translate(0px,0px) scale(1.15)',
+  ].join(';');
+
+  document.body.appendChild(flyer);
+
+  // Two rAF calls: first to let browser register the start position,
+  // second to actually set the end transform (this is what triggers the CSS transition)
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      flyer.style.transform = `translate(${dx}px, ${dy}px) scale(1.1)`;
+    });
+  });
+
+  // After transition ends (200ms + buffer), remove flyer and render final board
+  const ANIM_MS = 220;
+  setTimeout(() => {
+    flyer.remove();
+    done();
+    // Flash destination square
+    const destSqs = document.querySelectorAll('#board .sq');
+    destSqs.forEach(sq => {
+      if (+sq.dataset.row === toRow && +sq.dataset.col === toCol) {
+        sq.classList.add('piece-landing');
+        setTimeout(() => sq.classList.remove('piece-landing'), 320);
+      }
+    });
+  }, ANIM_MS);
+}
+
 function onSquareClick(row,col){
   if(!myColor||currentTurn!==myColor||gamePaused||gameOver||isViewingHistory)return;
   const piece=board[row][col];
   if(selected){
     if(selected.row===row&&selected.col===col){selected=null;renderBoard(board);return;}
-    if(board[row][col]&&board[row][col]!==' ')SFX.capture();else SFX.move();
+    const fromRow=selected.row, fromCol=selected.col;
+    const isCapture=board[row][col]&&board[row][col]!==' ';
+    if(isCapture)SFX.capture();else SFX.move();
     if(timerMaxSeconds>0)stopTimer();
-    socket.emit('makeMove',{roomId,fromRow:selected.row,fromCol:selected.col,toRow:row,toCol:col});
+
+    // Animate the move locally immediately (optimistic UI)
+    const movingPiece=board[fromRow][fromCol];
+    const intermediate=board.map(r=>[...r]);
+    intermediate[fromRow][fromCol]=' ';
+    intermediate[row][col]=' ';
+    renderBoard(intermediate);
+    animatePieceMove(movingPiece, fromRow, fromCol, row, col, ()=>{
+      // Board will be corrected when server responds
+    });
+
+    socket.emit('makeMove',{roomId,fromRow,fromCol,toRow:row,toCol:col});
     selected=null;
   } else {
     if(!piece||piece===' ')return;
@@ -481,19 +563,43 @@ socket.on('gameStart',({board:bd,turn,vsComputer:cpu,timerSeconds:ts})=>{
 socket.on('boardUpdate',({board:bd,turn,winner,moveCount,lastMove:lm,isComputerMove,status,checkSquare:cs,resigned})=>{
   const movedPiece=lm?board[lm.fromRow][lm.fromCol]:null;
   const capturedPiece=lm&&board[lm.toRow][lm.toCol]&&board[lm.toRow][lm.toCol]!==' '?board[lm.toRow][lm.toCol]:null;
+
+  // Capture old board state before updating
+  const prevBoard = board.map(r=>[...r]);
+
   board=bd; currentTurn=turn; lastMove=lm; selected=null;
   totalMoves=moveCount||totalMoves+1; checkSquare=cs||null;
+
   if(capturedPiece)addCapturedPiece(capturedPiece);
   if(lm&&movedPiece){
     const from=FILES[lm.fromCol]+(8-lm.fromRow),to=FILES[lm.toCol]+(8-lm.toRow);
     addMoveToList(GLYPHS[movedPiece]+from+'–'+to, isComputerMove?'black':(turn==='white'?'black':'white'));
   }
   recordSnapshot(bd,lm,cs);
-  if(!isViewingHistory)renderBoard(bd);
+
+  if(!isViewingHistory){
+    // Show intermediate board (piece still at source, destination cleared)
+    // so the flyer animates over the correct background
+    if(lm && movedPiece && !winner){
+      const intermediate = bd.map(r=>[...r]);
+      // Put piece back at source for the background board
+      intermediate[lm.fromRow][lm.fromCol] = movedPiece;
+      intermediate[lm.toRow][lm.toCol]     = ' ';
+      renderBoard(intermediate);
+      // Animate the flying piece, then show final board
+      animatePieceMove(movedPiece, lm.fromRow, lm.fromCol, lm.toRow, lm.toCol, ()=>{
+        renderBoard(bd);
+        if(status==='check'){showBanner('⚠ Check! Your king is under attack','check');SFX.check();}
+      });
+    } else {
+      renderBoard(bd);
+      if(status==='check'){showBanner('⚠ Check! Your king is under attack','check');SFX.check();}
+    }
+  }
+
   updateTurnIndicators(turn,winner,status); updateActiveCard(turn);
   if(isComputerMove)SFX.move();
   hideBanner();
-  if(status==='check'){showBanner('⚠ Check! Your king is under attack','check');SFX.check();}
   if(timerMaxSeconds>0&&!winner&&!gamePaused){stopTimer();startTimer();updateTimerDisplay();}
   if(winner||status==='checkmate'||status==='stalemate'||status==='draw'||resigned)showResult(winner,status);
 });
