@@ -280,72 +280,90 @@ function renderBoard(bd, overrideCheck){
   }));
 }
 
-/* Get pixel rect of a board square */
-function getSquareRect(row, col) {
+/* ─── PIECE ANIMATION ─────────────────────────────────────────
+   Strategy: inject a unique @keyframes per move with exact pixel
+   values baked in, then apply it with animation (not transition).
+   iOS Safari always runs @keyframes — it never skips them.
+   The flyer sits at position:fixed over the from-square at z:9999.
+────────────────────────────────────────────────────────────── */
+
+let _animId = 0; // unique id per animation to avoid keyframe name collisions
+
+function animatePieceMove(piece, fromRow, fromCol, toRow, toCol, done) {
   const boardEl = document.getElementById('board');
   const boardRect = boardEl.getBoundingClientRect();
-  const sqSize = boardRect.width / 8;
+  const sq = boardRect.width / 8;
 
-  const dispRow = myColor === 'black' ? (7 - row) : row;
-  const dispCol = myColor === 'black' ? (7 - col) : col;
+  // Display coords (account for board flip)
+  const dFromR = myColor === 'black' ? (7 - fromRow) : fromRow;
+  const dFromC = myColor === 'black' ? (7 - fromCol) : fromCol;
+  const dToR   = myColor === 'black' ? (7 - toRow)   : toRow;
+  const dToC   = myColor === 'black' ? (7 - toCol)   : toCol;
 
-  return {
-    left: boardRect.left + dispCol * sqSize,
-    top:  boardRect.top  + dispRow * sqSize,
-    size: sqSize,
-  };
-}
+  // Absolute pixel positions of each square's top-left
+  const fx = boardRect.left + dFromC * sq;
+  const fy = boardRect.top  + dFromR * sq;
+  const tx = boardRect.left + dToC   * sq;
+  const ty = boardRect.top  + dToR   * sq;
 
-/* Animate piece sliding from fromSquare to toSquare.
-   Uses transform:translate so it works on all browsers including iOS Safari.
-   Calls done() after animation completes. */
-function animatePieceMove(piece, fromRow, fromCol, toRow, toCol, done) {
-  const fromRect = getSquareRect(fromRow, fromCol);
-  const toRect   = getSquareRect(toRow,   toCol);
-  const isWhite  = piece === piece.toUpperCase();
-  const sz       = fromRect.size;
+  // How far to travel (used as the translate endpoint in @keyframes)
+  const dx = tx - fx;
+  const dy = ty - fy;
 
-  // dx/dy: how far the flyer needs to travel
-  const dx = toRect.left - fromRect.left;
-  const dy = toRect.top  - fromRect.top;
+  const isWhite = piece === piece.toUpperCase();
+  const id = 'pm' + (++_animId);
+  const DURATION = 240; // ms
 
-  // Build the flyer element — positioned exactly over the FROM square
+  // 1. Inject unique @keyframes into a <style> tag
+  const styleEl = document.createElement('style');
+  styleEl.id = id + '-style';
+  styleEl.textContent = `
+    @keyframes ${id} {
+      0%   { transform: translate(0px, 0px)        scale(1.22); opacity:1; }
+      40%  { transform: translate(${dx*0.5}px, ${dy*0.5}px) scale(1.28); opacity:1; }
+      100% { transform: translate(${dx}px, ${dy}px) scale(1.18); opacity:1; }
+    }
+  `;
+  document.head.appendChild(styleEl);
+
+  // 2. Build flyer — sits at FROM square, no transition, only animation
   const flyer = document.createElement('span');
-  flyer.className = 'piece-flyer ' + (isWhite ? 'white' : 'black');
   flyer.textContent = GLYPHS[piece] || piece;
-  flyer.style.cssText = [
-    'left:'    + fromRect.left + 'px',
-    'top:'     + fromRect.top  + 'px',
-    'width:'   + sz + 'px',
-    'height:'  + sz + 'px',
-    'font-size:' + (sz * 0.74) + 'px',
-    'transform:translate(0px,0px) scale(1.15)',
-  ].join(';');
+
+  const filterWhite = `invert(1)`;
+  const filterBlack = `none`;
+
+  flyer.style.cssText = `
+    position:fixed;
+    left:${fx}px; top:${fy}px;
+    width:${sq}px; height:${sq}px;
+    font-size:${sq * 0.74}px;
+    line-height:${sq}px;
+    text-align:center;
+    display:block;
+    pointer-events:none;
+    z-index:9999;
+    color:#000000;
+    will-change:transform;
+    filter:${isWhite ? filterWhite : filterBlack};
+    animation:${id} ${DURATION}ms cubic-bezier(0.25,0.1,0.25,1.0) forwards;
+  `;
 
   document.body.appendChild(flyer);
 
-  // Two rAF calls: first to let browser register the start position,
-  // second to actually set the end transform (this is what triggers the CSS transition)
-  requestAnimationFrame(() => {
-    requestAnimationFrame(() => {
-      flyer.style.transform = `translate(${dx}px, ${dy}px) scale(1.1)`;
-    });
-  });
-
-  // After transition ends (200ms + buffer), remove flyer and render final board
-  const ANIM_MS = 220;
+  // 3. After animation completes, clean up and call done
   setTimeout(() => {
     flyer.remove();
+    styleEl.remove();
     done();
-    // Flash destination square
-    const destSqs = document.querySelectorAll('#board .sq');
-    destSqs.forEach(sq => {
+    // Flash landing square
+    document.querySelectorAll('#board .sq').forEach(sq => {
       if (+sq.dataset.row === toRow && +sq.dataset.col === toCol) {
         sq.classList.add('piece-landing');
-        setTimeout(() => sq.classList.remove('piece-landing'), 320);
+        setTimeout(() => sq.classList.remove('piece-landing'), 300);
       }
     });
-  }, ANIM_MS);
+  }, DURATION + 30);
 }
 
 function onSquareClick(row,col){

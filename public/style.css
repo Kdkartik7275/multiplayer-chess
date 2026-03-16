@@ -749,45 +749,10 @@ html, body {
 .sq:hover .piece { transform:scale(1.1); }
 #board.viewing-history { opacity:0.72; pointer-events:none; }
 
-/* ── PIECE MOVE ANIMATION ── */
-.piece-flyer {
-  position: fixed;
-  pointer-events: none;
-  z-index: 9999;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  line-height: 1;
-  will-change: transform;
-  /* GPU-accelerated slide — transform animates from translate(0,0) to translate(dx,dy) */
-  transition: transform 0.20s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-  transform: translate(0, 0) scale(1.15);
-}
-/* White flyer */
-.piece-flyer.white {
-  color: #000;
-  filter:
-    invert(1)
-    drop-shadow(0 4px 12px rgba(0,0,0,0.8))
-    drop-shadow(0  1px 0 #000)
-    drop-shadow(0 -1px 0 #000)
-    drop-shadow( 1px 0  0 #000)
-    drop-shadow(-1px 0  0 #000);
-}
-/* Black flyer */
-.piece-flyer.black {
-  color: #000;
-  filter:
-    drop-shadow(0 4px 12px rgba(0,0,0,0.8))
-    drop-shadow(0  1px 0 rgba(210,190,150,0.9))
-    drop-shadow(0 -1px 0 rgba(210,190,150,0.9))
-    drop-shadow( 1px 0  0 rgba(210,190,150,0.9))
-    drop-shadow(-1px 0  0 rgba(210,190,150,0.9));
-}
-/* Landing flash */
+/* Landing flash when piece arrives */
 .sq.piece-landing { animation: landFlash 0.3s ease-out; }
 @keyframes landFlash {
-  0%   { filter: brightness(1.8); }
+  0%   { filter: brightness(1.9); }
   100% { filter: brightness(1); }
 }
 
