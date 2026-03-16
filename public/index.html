@@ -6,616 +6,564 @@
       name="viewport"
       content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
     />
-    <title>♟ Royal Chess</title>
+    <title>Royal Chess</title>
     <script src="/socket.io/socket.io.js"></script>
-    <link
-      href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700;900&family=Cinzel:wght@400;600;700&family=IM+Fell+English:ital@0;1&display=swap"
-      rel="stylesheet"
-    />
     <link rel="stylesheet" href="style.css" />
   </head>
-  <body>
-    <!-- ═══ LOADING ═══ -->
+  <body data-theme="classic">
+    <!-- ══════════════ LOADING ══════════════ -->
     <div id="screen-loading" class="screen active">
-      <div class="load-bg">
-        <div class="load-grid"></div>
-        <div class="load-vignette"></div>
-      </div>
-      <div class="load-content">
+      <div class="bg-canvas"></div>
+      <div class="grid-overlay"></div>
+      <div class="vignette"></div>
+      <div class="load-inner">
         <div class="load-crest">
-          <svg class="crest-svg" viewBox="0 0 160 160">
-            <circle
-              cx="80"
-              cy="80"
-              r="74"
-              fill="none"
-              stroke="rgba(201,146,42,0.25)"
-              stroke-width="1"
-            />
-            <circle
-              cx="80"
-              cy="80"
-              r="62"
-              fill="none"
-              stroke="rgba(201,146,42,0.18)"
-              stroke-width="1"
-              stroke-dasharray="4 6"
-            />
-            <circle
-              cx="80"
-              cy="80"
-              r="50"
-              fill="none"
-              stroke="rgba(201,146,42,0.35)"
-              stroke-width="1.5"
-            />
-            <g stroke="rgba(201,146,42,0.5)" stroke-width="1.5">
-              <line x1="80" y1="6" x2="80" y2="16" />
-              <line x1="80" y1="144" x2="80" y2="154" />
-              <line x1="6" y1="80" x2="16" y2="80" />
-              <line x1="144" y1="80" x2="154" y2="80" />
-              <line x1="27" y1="27" x2="34" y2="34" />
-              <line x1="126" y1="126" x2="133" y2="133" />
-              <line x1="27" y1="133" x2="34" y2="126" />
-              <line x1="126" y1="34" x2="133" y2="27" />
-            </g>
-            <circle
-              class="spin-ring"
-              cx="80"
-              cy="80"
-              r="68"
-              fill="none"
-              stroke="rgba(201,146,42,0.6)"
-              stroke-width="1.5"
-              stroke-dasharray="12 300"
-            />
-          </svg>
-          <div class="crest-piece">♟</div>
+          <div class="load-ring"></div>
+          <div class="load-ring"></div>
+          <div class="load-ring"></div>
+          <div class="load-piece-main">♛</div>
         </div>
         <h1 class="load-title">ROYAL CHESS</h1>
-        <div class="load-sub">Est. MMXXVI</div>
-        <div class="load-bar-wrap">
-          <div class="load-track">
-            <div class="load-fill" id="load-bar"></div>
-          </div>
-          <div class="load-status" id="load-label">Summoning the pieces…</div>
-        </div>
-        <div class="corner-deco tl"></div>
-        <div class="corner-deco tr"></div>
-        <div class="corner-deco bl"></div>
-        <div class="corner-deco br"></div>
+        <div class="load-sub">Strategy · Skill · Victory</div>
+        <div class="load-bar"><div class="load-fill" id="load-bar"></div></div>
+        <div class="load-msg" id="load-label">Summoning the pieces…</div>
       </div>
     </div>
 
-    <!-- ═══ MENU ═══ -->
+    <!-- ══════════════ MENU ══════════════ -->
     <div id="screen-menu" class="screen">
-      <div class="menu-bg">
-        <div class="menu-chess-pattern"></div>
-        <div class="menu-vignette"></div>
+      <!-- Left decorative panel -->
+      <div class="menu-left">
+        <div class="bg-canvas"></div>
+        <div class="grid-overlay"></div>
+        <div class="vignette"></div>
+        <!-- floating pieces injected by JS -->
+        <div id="float-pieces"></div>
+        <!-- 3D board -->
+        <div class="menu-board-wrap">
+          <div id="deco-board"></div>
+        </div>
+        <!-- Quote overlay -->
+        <div class="menu-left-content">
+          <div class="menu-left-quote">"Chess is the art of analysis."</div>
+          <div class="menu-left-attr">— Mikhail Botvinnik</div>
+        </div>
       </div>
 
-      <div id="menu-main" class="menu-panel">
-        <div class="menu-header">
-          <div class="menu-ornament">
-            <span>✦</span>
-            <div class="orn-line"></div>
-            <span>✦</span>
-          </div>
-          <h1 class="menu-title">ROYAL<br />CHESS</h1>
-          <p class="menu-tagline">
-            <em>Command the Board. Claim the Crown.</em>
-          </p>
-          <div class="menu-ornament flip">
-            <span>✦</span>
-            <div class="orn-line"></div>
-            <span>✦</span>
+      <!-- Right content panel -->
+      <div class="menu-right">
+        <!-- Logo -->
+        <div class="menu-logo">
+          <div class="logo-icon"><span class="logo-piece">♟</span></div>
+          <div>
+            <div class="logo-text-title">Royal Chess</div>
+            <div class="logo-text-sub">Real-time · Multiplayer · AI</div>
           </div>
         </div>
-        <nav class="menu-nav">
-          <button
-            class="menu-btn"
-            onclick="
-              playClick();
-              showPanel('panel-multiplayer');
-            "
-          >
-            <span class="mbtn-icon">⚔</span>
-            <span class="mbtn-body"
-              ><span class="mbtn-title">Multiplayer</span
-              ><span class="mbtn-desc">Challenge a friend online</span></span
+
+        <!-- MAIN MENU -->
+        <div id="menu-main" class="menu-section">
+          <div class="menu-play-btns">
+            <button
+              class="play-card"
+              onclick="
+                playClick();
+                showPanel('panel-multiplayer');
+              "
             >
-            <span class="mbtn-chevron">›</span>
-          </button>
-          <button
-            class="menu-btn"
-            onclick="
-              playClick();
-              showPanel('panel-computer');
-            "
-          >
-            <span class="mbtn-icon">♞</span>
-            <span class="mbtn-body"
-              ><span class="mbtn-title">vs Computer</span
-              ><span class="mbtn-desc">Face the iron engine</span></span
-            >
-            <span class="mbtn-chevron">›</span>
-          </button>
-        </nav>
-        <div class="menu-util-row">
-          <button
-            class="util-btn"
-            onclick="
-              playClick();
-              openSettings();
-            "
-          >
-            <span class="util-icon">⚙</span><span>Settings</span>
-          </button>
-          <button class="util-btn" onclick="toggleSound()">
-            <span class="util-icon" id="sound-icon">🔊</span
-            ><span id="sound-label">Sound On</span>
-          </button>
-        </div>
-        <div class="menu-footer">Two Players · Real-time · MMXXVI</div>
-      </div>
-
-      <div id="panel-multiplayer" class="menu-panel hidden">
-        <button
-          class="back-btn"
-          onclick="
-            playClick();
-            showPanel('menu-main');
-          "
-        >
-          ← Retreat
-        </button>
-        <div class="panel-title">ENTER THE FIELD</div>
-        <p class="panel-desc">Share your Room ID with an ally.</p>
-        <div class="field-group">
-          <label class="field-label">ROOM ID</label>
-          <input
-            type="text"
-            id="room-input"
-            class="field-input"
-            placeholder="e.g. castle99"
-            maxlength="20"
-          />
-        </div>
-        <div class="field-group">
-          <label class="field-label">TIME CONTROL</label>
-          <div class="timer-grid" id="timer-select-mp">
-            <button class="timer-btn active" data-time="0">∞ No Limit</button>
-            <button class="timer-btn" data-time="180">3 min</button>
-            <button class="timer-btn" data-time="300">5 min</button>
-            <button class="timer-btn" data-time="600">10 min</button>
-          </div>
-        </div>
-        <button
-          class="action-btn"
-          onclick="
-            playClick();
-            joinRoom();
-          "
-        >
-          Deploy to Battle
-        </button>
-        <p class="field-hint">
-          Two browser tabs on the same device also works.
-        </p>
-      </div>
-
-      <div id="panel-computer" class="menu-panel hidden">
-        <button
-          class="back-btn"
-          onclick="
-            playClick();
-            showPanel('menu-main');
-          "
-        >
-          ← Retreat
-        </button>
-        <div class="panel-title">CHOOSE YOUR FOE</div>
-        <p class="panel-desc">Select the engine's strength.</p>
-        <div class="diff-grid">
-          <button
-            class="diff-card active"
-            data-diff="easy"
-            onclick="
-              playClick();
-              setDiff('easy');
-            "
-          >
-            <span class="dc-icon">🕯</span><span class="dc-name">Squire</span
-            ><span class="dc-hint">Beginner</span>
-          </button>
-          <button
-            class="diff-card"
-            data-diff="medium"
-            onclick="
-              playClick();
-              setDiff('medium');
-            "
-          >
-            <span class="dc-icon">⚔</span> <span class="dc-name">Knight</span
-            ><span class="dc-hint">Balanced</span>
-          </button>
-          <button
-            class="diff-card"
-            data-diff="hard"
-            onclick="
-              playClick();
-              setDiff('hard');
-            "
-          >
-            <span class="dc-icon">👑</span><span class="dc-name">King</span
-            ><span class="dc-hint">Merciless</span>
-          </button>
-        </div>
-        <div class="field-group" style="margin-top: 14px">
-          <label class="field-label">TIME CONTROL</label>
-          <div class="timer-grid" id="timer-select-cpu">
-            <button class="timer-btn active" data-time="0">∞ No Limit</button>
-            <button class="timer-btn" data-time="180">3 min</button>
-            <button class="timer-btn" data-time="300">5 min</button>
-            <button class="timer-btn" data-time="600">10 min</button>
-          </div>
-        </div>
-        <button
-          class="action-btn"
-          onclick="
-            playClick();
-            joinComputer();
-          "
-        >
-          March to War
-        </button>
-      </div>
-    </div>
-
-    <!-- ═══ GAME ═══ -->
-    <div id="screen-game" class="screen">
-      <div class="game-bg"><div class="game-vignette"></div></div>
-      <div class="game-layout">
-        <!-- TOP BAR -->
-        <div class="game-topbar">
-          <div class="gtb-player">
-            <div class="color-pip" id="my-dot"></div>
-            <span id="my-color-label">You</span>
-          </div>
-          <span class="gtb-room" id="status-msg">Connecting…</span>
-          <div class="gtb-actions">
-            <button class="icon-btn" onclick="togglePause()" id="pause-btn">
-              ⏸
+              <div class="pc-icon">⚔</div>
+              <div class="pc-body">
+                <div class="pc-title">Play Online</div>
+                <div class="pc-desc">Challenge a friend with a Room ID</div>
+              </div>
+              <div class="pc-arrow">›</div>
             </button>
             <button
-              class="icon-btn"
+              class="play-card"
+              onclick="
+                playClick();
+                showPanel('panel-computer');
+              "
+            >
+              <div class="pc-icon">🤖</div>
+              <div class="pc-body">
+                <div class="pc-title">vs Computer</div>
+                <div class="pc-desc">Battle the AI engine</div>
+              </div>
+              <div class="pc-arrow">›</div>
+            </button>
+          </div>
+          <div class="menu-utils">
+            <button
+              class="util-btn"
               onclick="
                 playClick();
                 openSettings();
               "
             >
-              ⚙
+              ⚙ Settings
+            </button>
+            <button class="util-btn" id="sound-btn" onclick="toggleSound()">
+              🔊 Sound
             </button>
           </div>
         </div>
 
-        <!-- BOARD AREA -->
-        <div class="board-area">
-          <div class="board-wrapper">
-            <div class="rank-labels" id="rank-labels"></div>
-            <div class="board-col">
-              <div id="board"></div>
-              <div class="file-labels" id="file-labels"></div>
+        <!-- MULTIPLAYER -->
+        <div id="panel-multiplayer" class="menu-section hidden">
+          <button
+            class="back-link"
+            onclick="
+              playClick();
+              showPanel('menu-main');
+            "
+          >
+            ← Back
+          </button>
+          <h2 class="panel-h2">Play Online</h2>
+          <div class="form-group">
+            <label class="form-label">Room ID</label>
+            <input
+              type="text"
+              id="room-input"
+              class="form-input"
+              placeholder="Enter room code…"
+              maxlength="20"
+            />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Time Control</label>
+            <div class="time-pills" id="timer-select-mp">
+              <button class="time-pill active" data-time="0">∞</button>
+              <button class="time-pill" data-time="180">3 min</button>
+              <button class="time-pill" data-time="300">5 min</button>
+              <button class="time-pill" data-time="600">10 min</button>
             </div>
           </div>
-          <!-- Mobile-only turn chip under board -->
-          <div
-            class="turn-chip-mobile"
-            id="turn-badge-mobile"
-            style="margin-top: 8px"
+          <button
+            class="btn-primary"
+            onclick="
+              playClick();
+              joinRoom();
+            "
           >
-            —
-          </div>
+            Join Game →
+          </button>
+          <p class="form-hint">Share the same Room ID with your opponent</p>
         </div>
 
-        <!-- SIDEBAR -->
-        <div class="game-sidebar">
-          <!-- Turn chip (desktop) -->
-          <div class="turn-chip-desktop" id="turn-badge-desktop">—</div>
-
-          <!-- Timer -->
-          <div class="timers-row" id="timers-row" style="display: none">
-            <div class="timer-box">
-              <div class="timer-label" id="timer-opp-label">Opponent</div>
-              <div class="timer-display" id="timer-opp-val">—</div>
-              <div class="timer-bar-track">
-                <div class="timer-bar-fill" id="timer-opp-bar"></div>
-              </div>
+        <!-- VS COMPUTER -->
+        <div id="panel-computer" class="menu-section hidden">
+          <button
+            class="back-link"
+            onclick="
+              playClick();
+              showPanel('menu-main');
+            "
+          >
+            ← Back
+          </button>
+          <h2 class="panel-h2">vs Computer</h2>
+          <div class="form-group">
+            <label class="form-label">Difficulty</label>
+            <div class="diff-row">
+              <button
+                class="diff-pill active"
+                data-diff="easy"
+                onclick="
+                  playClick();
+                  setDiff('easy');
+                "
+              >
+                🕯 Squire
+              </button>
+              <button
+                class="diff-pill"
+                data-diff="medium"
+                onclick="
+                  playClick();
+                  setDiff('medium');
+                "
+              >
+                ⚔ Knight
+              </button>
+              <button
+                class="diff-pill"
+                data-diff="hard"
+                onclick="
+                  playClick();
+                  setDiff('hard');
+                "
+              >
+                👑 King
+              </button>
             </div>
-            <div class="timer-sep">⚔</div>
-            <div class="timer-box">
-              <div class="timer-label" id="timer-my-label">You</div>
-              <div class="timer-display" id="timer-my-val">—</div>
-              <div class="timer-bar-track">
-                <div class="timer-bar-fill" id="timer-my-bar"></div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Time Control</label>
+            <div class="time-pills" id="timer-select-cpu">
+              <button class="time-pill active" data-time="0">∞</button>
+              <button class="time-pill" data-time="180">3 min</button>
+              <button class="time-pill" data-time="300">5 min</button>
+              <button class="time-pill" data-time="600">10 min</button>
+            </div>
+          </div>
+          <button
+            class="btn-primary"
+            onclick="
+              playClick();
+              joinComputer();
+            "
+          >
+            Start Game →
+          </button>
+        </div>
+      </div>
+      <!-- /menu-right -->
+    </div>
+
+    <!-- ══════════════ GAME ══════════════ -->
+    <div id="screen-game" class="screen">
+      <div class="game-root">
+        <!-- LEFT SIDEBAR -->
+        <aside class="game-aside left-aside">
+          <div class="aside-top">
+            <div class="brand-sm">♟ Royal Chess</div>
+            <div class="mode-tag" id="mode-tag">vs Computer</div>
+          </div>
+
+          <!-- Opponent card -->
+          <div class="player-card" id="opponent-card">
+            <div class="pc-avatar" id="opp-avatar">♚</div>
+            <div class="pc-info">
+              <div class="pc-name" id="opp-name">Opponent</div>
+              <div class="pc-color" id="opp-color-label">Black</div>
+            </div>
+            <div class="pc-timer" id="opp-timer" style="display: none">
+              <div class="pc-time" id="timer-opp-val">—</div>
+              <div class="pc-timebar">
+                <div class="pc-timefill" id="timer-opp-bar"></div>
               </div>
             </div>
           </div>
 
-          <!-- Thinking -->
-          <div id="thinking-bar" class="thinking-bar" style="display: none">
-            <div class="think-dots"><i></i><i></i><i></i></div>
-            <span>Engine calculating…</span>
-          </div>
+          <div class="captured-row" id="captured-opp"></div>
 
-          <!-- Status banner -->
           <div
             id="status-banner"
             class="status-banner"
             style="display: none"
           ></div>
 
-          <!-- Move History (always visible in sidebar) -->
-          <div class="history-sidebar">
-            <div class="history-header">
-              <span class="history-title">MOVE HISTORY</span>
+          <div id="thinking-bar" class="thinking-bar" style="display: none">
+            <div class="think-dots"><i></i><i></i><i></i></div>
+            <span>Engine thinking…</span>
+          </div>
+
+          <div class="aside-spacer"></div>
+
+          <div class="captured-row" id="captured-me"></div>
+
+          <!-- My card -->
+          <div class="player-card" id="my-card">
+            <div class="pc-avatar" id="my-avatar">♙</div>
+            <div class="pc-info">
+              <div class="pc-name">You</div>
+              <div class="pc-color" id="my-color-label">White</div>
             </div>
-            <div class="history-list" id="history-list"></div>
-            <div class="history-nav">
-              <button class="hist-btn" onclick="historyStep(-1)">◀</button>
-              <span class="hist-pos" id="hist-pos">—</span>
-              <button class="hist-btn" onclick="historyStep(1)">▶</button>
-              <button class="hist-btn hist-live" onclick="historyGoLive()">
-                Live ⚡
-              </button>
+            <div class="pc-timer" id="my-timer" style="display: none">
+              <div class="pc-time" id="timer-my-val">—</div>
+              <div class="pc-timebar">
+                <div class="pc-timefill" id="timer-my-bar"></div>
+              </div>
             </div>
           </div>
-        </div>
-        <!-- /sidebar -->
 
-        <!-- BOTTOM ACTIONS -->
-        <div class="game-actions-row">
-          <button
-            class="game-act-btn resign-btn"
-            onclick="confirmResign()"
-            id="resign-btn"
-          >
-            ⚑ Resign
-          </button>
-          <button
-            class="game-act-btn draw-btn"
-            onclick="offerDraw()"
-            id="draw-btn"
-          >
-            🤝 Draw
-          </button>
-        </div>
+          <!-- Controls -->
+          <div class="game-controls">
+            <button
+              class="ctrl-btn"
+              onclick="togglePause()"
+              id="pause-btn"
+              title="Pause"
+            >
+              ⏸
+            </button>
+            <button
+              class="ctrl-btn"
+              onclick="
+                playClick();
+                openSettings();
+              "
+              title="Settings"
+            >
+              ⚙
+            </button>
+            <button
+              class="ctrl-btn resign"
+              onclick="confirmResign()"
+              id="resign-btn"
+              title="Resign"
+            >
+              ⚑
+            </button>
+            <button
+              class="ctrl-btn draw"
+              onclick="offerDraw()"
+              id="draw-btn"
+              title="Draw"
+            >
+              ½
+            </button>
+          </div>
+        </aside>
+
+        <!-- BOARD COLUMN -->
+        <main class="game-main">
+          <div class="turn-row" id="opp-turn-row">
+            <div class="turn-dot" id="opp-turn-dot"></div>
+            <span id="opp-turn-label">Waiting…</span>
+          </div>
+          <div class="board-frame">
+            <div class="coord-col" id="rank-labels"></div>
+            <div>
+              <div id="board"></div>
+              <div class="coord-row" id="file-labels"></div>
+            </div>
+          </div>
+          <div class="turn-row" id="my-turn-row">
+            <div class="turn-dot" id="my-turn-dot"></div>
+            <span id="my-turn-label">Your Turn</span>
+          </div>
+        </main>
+
+        <!-- RIGHT SIDEBAR -->
+        <aside class="game-aside right-aside">
+          <div class="aside-top">
+            <span class="aside-title">Moves</span>
+            <button class="live-btn hist-live" onclick="historyGoLive()">
+              Live
+            </button>
+          </div>
+          <div class="move-list" id="move-list"></div>
+          <div class="hist-nav">
+            <button class="hist-nav-btn" onclick="historyStep(-Infinity)">
+              |◀
+            </button>
+            <button class="hist-nav-btn" onclick="historyStep(-1)">◀</button>
+            <button class="hist-nav-btn" onclick="historyStep(1)">▶</button>
+            <button class="hist-nav-btn" onclick="historyStep(Infinity)">
+              ▶|
+            </button>
+          </div>
+          <div class="aside-spacer"></div>
+          <div class="engine-info" id="engine-info" style="display: none">
+            <div class="engine-label">Engine Strength</div>
+            <div class="engine-depth" id="engine-depth">—</div>
+          </div>
+        </aside>
       </div>
-      <!-- /game-layout -->
     </div>
 
-    <!-- ═══ RESULT ═══ -->
+    <!-- ══════════════ RESULT ══════════════ -->
     <div id="screen-result" class="screen">
-      <div class="result-bg">
-        <div id="result-particles" class="result-particles"></div>
-        <div class="result-vignette"></div>
-      </div>
-      <div class="result-content">
-        <div class="result-ring">
-          <div class="result-emblem" id="result-emblem">♔</div>
-        </div>
+      <div class="bg-canvas"></div>
+      <div class="vignette"></div>
+      <div class="result-card">
+        <div class="result-icon" id="result-icon">♔</div>
         <div class="result-verdict" id="result-verdict">VICTORY</div>
-        <div class="result-subtitle" id="result-subtitle">
-          You have conquered the board.
+        <div class="result-sub" id="result-subtitle">
+          You delivered checkmate
         </div>
-        <div class="result-divider">
-          <span>✦</span>
-          <div></div>
-          <span>✦</span>
-        </div>
+        <div class="result-hr"></div>
         <div class="result-stats">
-          <div class="rstat">
-            <div class="rstat-val" id="stat-moves">—</div>
-            <div class="rstat-key">Moves Played</div>
+          <div class="rs">
+            <div class="rs-val" id="stat-moves">—</div>
+            <div class="rs-key">Moves</div>
           </div>
-          <div class="rstat-sep">|</div>
-          <div class="rstat">
-            <div class="rstat-val" id="stat-color">—</div>
-            <div class="rstat-key">Your Pieces</div>
+          <div class="rs-div"></div>
+          <div class="rs">
+            <div class="rs-val" id="stat-color">—</div>
+            <div class="rs-key">Your Side</div>
           </div>
         </div>
-        <div class="result-actions">
-          <button class="rbtn primary" onclick="location.reload()">
+        <div class="result-btns">
+          <button class="btn-primary" onclick="location.reload()">
             ⚔ Play Again
           </button>
-          <button class="rbtn secondary" onclick="goToMenu()">
-            ↩ Main Menu
-          </button>
+          <button class="btn-ghost" onclick="goToMenu()">↩ Main Menu</button>
         </div>
       </div>
+      <div id="result-particles"></div>
     </div>
 
-    <!-- ═══ SETTINGS ═══ -->
+    <!-- ══════════════ SETTINGS MODAL ══════════════ -->
     <div id="settings-overlay" class="modal-overlay hidden">
-      <div class="settings-modal">
-        <div class="modal-header">
-          <h2 class="modal-title">Settings</h2>
-          <button class="modal-close" onclick="closeSettings()">✕</button>
+      <div class="modal-card">
+        <div class="modal-head">
+          <span class="modal-title">Settings</span>
+          <button class="modal-x" onclick="closeSettings()">✕</button>
         </div>
         <div class="setting-row">
-          <div class="setting-icon">🔊</div>
-          <div class="setting-body">
-            <div class="setting-name">Sound Effects</div>
-            <div class="setting-desc">Toggle game sounds</div>
+          <div class="sr-left">
+            <div class="sr-icon">🔊</div>
+            <div class="sr-body">
+              <div class="sr-name">Sound Effects</div>
+              <div class="sr-desc">Game audio on/off</div>
+            </div>
           </div>
-          <label class="toggle-switch"
+          <label class="toggle"
             ><input
               type="checkbox"
               id="setting-sound"
               checked
-              onchange="onSoundToggle(this)" /><span class="toggle-track"
-              ><span class="toggle-thumb"></span></span
+              onchange="onSoundToggle(this)" /><span class="tgl-track"
+              ><span class="tgl-thumb"></span></span
           ></label>
         </div>
         <div class="setting-row">
-          <div class="setting-icon">📐</div>
-          <div class="setting-body">
-            <div class="setting-name">Move Hints</div>
-            <div class="setting-desc">Highlight last move</div>
+          <div class="sr-left">
+            <div class="sr-icon">✨</div>
+            <div class="sr-body">
+              <div class="sr-name">Move Highlights</div>
+              <div class="sr-desc">Show last move</div>
+            </div>
           </div>
-          <label class="toggle-switch"
+          <label class="toggle"
             ><input
               type="checkbox"
               id="setting-hints"
               checked
-              onchange="onHintsToggle(this)" /><span class="toggle-track"
-              ><span class="toggle-thumb"></span></span
+              onchange="onHintsToggle(this)" /><span class="tgl-track"
+              ><span class="tgl-thumb"></span></span
           ></label>
         </div>
-        <div class="setting-row setting-row-block">
-          <div class="setting-row-top">
-            <div class="setting-icon">🎨</div>
-            <div class="setting-body">
-              <div class="setting-name">Board Theme</div>
-              <div class="setting-desc">Change board colours</div>
-            </div>
+        <div class="setting-row col">
+          <div class="sr-left">
+            <div class="sr-icon">🎨</div>
+            <div class="sr-body"><div class="sr-name">Board Theme</div></div>
           </div>
-          <div class="theme-grid">
+          <div class="theme-swatches">
             <button
-              class="theme-swatch active"
+              class="tsw active"
               data-theme="classic"
               onclick="setTheme('classic')"
             >
-              <span class="sw-light" style="background: #f0d9b5"></span
-              ><span class="sw-dark" style="background: #b58863"></span
-              ><span class="sw-name">Classic</span>
+              <div class="tsw-colors">
+                <span style="background: #f0d9b5"></span
+                ><span style="background: #b58863"></span>
+              </div>
+              <em>Classic</em>
             </button>
             <button
-              class="theme-swatch"
+              class="tsw"
               data-theme="walnut"
               onclick="setTheme('walnut')"
             >
-              <span class="sw-light" style="background: #e8c99a"></span
-              ><span class="sw-dark" style="background: #7a4a2e"></span
-              ><span class="sw-name">Walnut</span>
+              <div class="tsw-colors">
+                <span style="background: #e8c99a"></span
+                ><span style="background: #7a4a2e"></span>
+              </div>
+              <em>Walnut</em>
+            </button>
+            <button class="tsw" data-theme="slate" onclick="setTheme('slate')">
+              <div class="tsw-colors">
+                <span style="background: #cdd5e0"></span
+                ><span style="background: #4a6080"></span>
+              </div>
+              <em>Slate</em>
             </button>
             <button
-              class="theme-swatch"
-              data-theme="slate"
-              onclick="setTheme('slate')"
-            >
-              <span class="sw-light" style="background: #cdd5e0"></span
-              ><span class="sw-dark" style="background: #4a6080"></span
-              ><span class="sw-name">Slate</span>
-            </button>
-            <button
-              class="theme-swatch"
+              class="tsw"
               data-theme="emerald"
               onclick="setTheme('emerald')"
             >
-              <span class="sw-light" style="background: #d4edda"></span
-              ><span class="sw-dark" style="background: #2e7d44"></span
-              ><span class="sw-name">Emerald</span>
+              <div class="tsw-colors">
+                <span style="background: #c8e8d4"></span
+                ><span style="background: #2e6644"></span>
+              </div>
+              <em>Emerald</em>
             </button>
             <button
-              class="theme-swatch"
+              class="tsw"
               data-theme="midnight"
               onclick="setTheme('midnight')"
             >
-              <span class="sw-light" style="background: #8892a4"></span
-              ><span class="sw-dark" style="background: #1e2840"></span
-              ><span class="sw-name">Midnight</span>
+              <div class="tsw-colors">
+                <span style="background: #7880a0"></span
+                ><span style="background: #1a2040"></span>
+              </div>
+              <em>Midnight</em>
             </button>
-            <button
-              class="theme-swatch"
-              data-theme="coral"
-              onclick="setTheme('coral')"
-            >
-              <span class="sw-light" style="background: #f5dcd4"></span
-              ><span class="sw-dark" style="background: #c0604a"></span
-              ><span class="sw-name">Coral</span>
+            <button class="tsw" data-theme="coral" onclick="setTheme('coral')">
+              <div class="tsw-colors">
+                <span style="background: #f5dcd4"></span
+                ><span style="background: #c05040"></span>
+              </div>
+              <em>Coral</em>
             </button>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- ═══ PAUSE ═══ -->
+    <!-- ══════════════ PAUSE MODAL ══════════════ -->
     <div id="pause-overlay" class="modal-overlay hidden">
-      <div class="pause-modal">
-        <div class="pause-emblem">⏸</div>
-        <div class="pause-title">GAME PAUSED</div>
-        <div class="pause-btns">
-          <button class="rbtn primary" onclick="resumeGame()">▶ Resume</button>
-          <button
-            class="rbtn secondary"
-            onclick="
-              playClick();
-              openSettings();
-            "
-          >
-            ⚙ Settings
-          </button>
-          <button class="rbtn danger" onclick="goToMenu()">↩ Quit Game</button>
-        </div>
+      <div class="modal-card center-modal">
+        <div class="modal-icon">⏸</div>
+        <div class="modal-title">Paused</div>
+        <button class="btn-primary full" onclick="resumeGame()">
+          ▶ Resume
+        </button>
+        <button
+          class="btn-ghost full"
+          onclick="
+            playClick();
+            openSettings();
+          "
+        >
+          ⚙ Settings
+        </button>
+        <button class="btn-danger full" onclick="goToMenu()">
+          ↩ Quit Game
+        </button>
       </div>
     </div>
 
-    <!-- ═══ PROMOTION ═══ -->
-    <div id="promo-overlay" class="modal-overlay hidden">
-      <div class="promo-modal">
-        <div class="promo-title">PROMOTE YOUR PAWN</div>
-        <div class="promo-pieces" id="promo-pieces"></div>
-      </div>
-    </div>
-
-    <!-- ═══ RESIGN CONFIRM ═══ -->
+    <!-- ══════════════ RESIGN CONFIRM ══════════════ -->
     <div id="resign-overlay" class="modal-overlay hidden">
-      <div class="pause-modal">
-        <div class="pause-emblem">⚑</div>
-        <div class="pause-title">RESIGN?</div>
-        <p
-          style="
-            color: var(--muted);
-            font-size: 0.85rem;
-            margin-bottom: 20px;
-            font-style: italic;
-            text-align: center;
-          "
-        >
-          This will end the game.
-        </p>
-        <div class="pause-btns">
-          <button class="rbtn danger" onclick="doResign()">Yes, Resign</button>
-          <button class="rbtn secondary" onclick="closeResign()">Cancel</button>
-        </div>
+      <div class="modal-card center-modal">
+        <div class="modal-icon">⚑</div>
+        <div class="modal-title">Resign?</div>
+        <p class="modal-sub">You will forfeit this game.</p>
+        <button class="btn-danger full" onclick="doResign()">
+          Yes, Resign
+        </button>
+        <button class="btn-ghost full" onclick="closeResign()">Cancel</button>
       </div>
     </div>
 
-    <!-- ═══ DRAW OFFER ═══ -->
+    <!-- ══════════════ DRAW OFFER ══════════════ -->
     <div id="draw-overlay" class="modal-overlay hidden">
-      <div class="pause-modal">
-        <div class="pause-emblem">🤝</div>
-        <div class="pause-title">DRAW OFFERED</div>
-        <p
-          style="
-            color: var(--muted);
-            font-size: 0.85rem;
-            margin-bottom: 20px;
-            font-style: italic;
-            text-align: center;
-          "
-        >
-          Your opponent offers a draw.
-        </p>
-        <div class="pause-btns">
-          <button class="rbtn primary" onclick="respondDraw(true)">
-            Accept
-          </button>
-          <button class="rbtn secondary" onclick="respondDraw(false)">
-            Decline
-          </button>
-        </div>
+      <div class="modal-card center-modal">
+        <div class="modal-icon">½</div>
+        <div class="modal-title">Draw Offered</div>
+        <p class="modal-sub">Your opponent proposes a draw.</p>
+        <button class="btn-primary full" onclick="respondDraw(true)">
+          Accept Draw
+        </button>
+        <button class="btn-ghost full" onclick="respondDraw(false)">
+          Decline
+        </button>
+      </div>
+    </div>
+
+    <!-- ══════════════ PROMOTION ══════════════ -->
+    <div id="promo-overlay" class="modal-overlay hidden">
+      <div class="modal-card center-modal">
+        <div class="modal-title">Promote Pawn</div>
+        <p class="modal-sub">Choose your piece</p>
+        <div class="promo-grid" id="promo-pieces"></div>
       </div>
     </div>
 
