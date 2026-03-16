@@ -1,4 +1,4 @@
-const { createInitialBoard } = require('./boardUtils');
+const { createInitialBoard, createCastlingRights } = require('./boardUtils');
 const rooms = {};
 
 function createRoom(roomId, firstPlayerId) {
@@ -8,14 +8,21 @@ function createRoom(roomId, firstPlayerId) {
     board: createInitialBoard(),
     turn: 'white',
     winner: null,
+    status: null,
     moveCount: 0,
     vsComputer: false,
     difficulty: 'medium',
+    timerSeconds: 0,
+    drawOffer: null,
+    gameState: {
+      castlingRights: createCastlingRights(),
+      enPassant: null,
+    },
   };
   return rooms[roomId];
 }
 
-function getRoom(roomId) { return rooms[roomId]; }
+function getRoom(roomId)    { return rooms[roomId]; }
 function deleteRoom(roomId) { delete rooms[roomId]; }
 
 function findRoomByPlayer(socketId) {

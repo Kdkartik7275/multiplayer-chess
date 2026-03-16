@@ -1,205 +1,624 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>♟ Royal Chess</title>
-  <script src="/socket.io/socket.io.js"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700;900&family=Cinzel:wght@400;600;700&family=IM+Fell+English:ital@0;1&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css" />
-</head>
-<body>
-
-<!-- ═══════════════  SCREEN 1: LOADING  ═══════════════ -->
-<div id="screen-loading" class="screen active">
-  <div class="load-bg">
-    <div class="load-grid"></div>
-    <div class="load-vignette"></div>
-  </div>
-  <div class="load-content">
-    <div class="load-crest">
-      <svg class="crest-svg" viewBox="0 0 160 160">
-        <circle cx="80" cy="80" r="74" fill="none" stroke="rgba(201,146,42,0.25)" stroke-width="1"/>
-        <circle cx="80" cy="80" r="62" fill="none" stroke="rgba(201,146,42,0.18)" stroke-width="1" stroke-dasharray="4 6"/>
-        <circle cx="80" cy="80" r="50" fill="none" stroke="rgba(201,146,42,0.35)" stroke-width="1.5"/>
-        <!-- tick marks -->
-        <g stroke="rgba(201,146,42,0.5)" stroke-width="1.5">
-          <line x1="80" y1="6"  x2="80" y2="16"/>
-          <line x1="80" y1="144" x2="80" y2="154"/>
-          <line x1="6"  y1="80" x2="16" y2="80"/>
-          <line x1="144" y1="80" x2="154" y2="80"/>
-          <line x1="27"  y1="27"  x2="34"  y2="34"/>
-          <line x1="126" y1="126" x2="133" y2="133"/>
-          <line x1="27"  y1="133" x2="34"  y2="126"/>
-          <line x1="126" y1="34"  x2="133" y2="27"/>
-        </g>
-        <!-- spinning ring -->
-        <circle class="spin-ring" cx="80" cy="80" r="68" fill="none" stroke="rgba(201,146,42,0.6)" stroke-width="1.5" stroke-dasharray="12 300"/>
-      </svg>
-      <div class="crest-piece">♟</div>
-    </div>
-    <h1 class="load-title">ROYAL CHESS</h1>
-    <div class="load-sub">Est. MMXXVI</div>
-    <div class="load-bar-wrap">
-      <div class="load-track"><div class="load-fill" id="load-bar"></div></div>
-      <div class="load-status" id="load-label">Summoning the pieces…</div>
-    </div>
-    <div class="corner-deco tl"></div>
-    <div class="corner-deco tr"></div>
-    <div class="corner-deco bl"></div>
-    <div class="corner-deco br"></div>
-  </div>
-</div>
-
-<!-- ═══════════════  SCREEN 2: MENU  ═══════════════ -->
-<div id="screen-menu" class="screen">
-  <div class="menu-bg">
-    <div class="menu-chess-pattern"></div>
-    <div class="menu-vignette"></div>
-  </div>
-
-  <!-- ── MAIN MENU ── -->
-  <div id="menu-main" class="menu-panel">
-    <div class="menu-header">
-      <div class="menu-ornament">
-        <span>✦</span><div class="orn-line"></div><span>✦</span>
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    />
+    <title>♟ Royal Chess</title>
+    <script src="/socket.io/socket.io.js"></script>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700;900&family=Cinzel:wght@400;600;700&family=IM+Fell+English:ital@0;1&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <!-- ═══ LOADING ═══ -->
+    <div id="screen-loading" class="screen active">
+      <div class="load-bg">
+        <div class="load-grid"></div>
+        <div class="load-vignette"></div>
       </div>
-      <h1 class="menu-title">ROYAL<br>CHESS</h1>
-      <p class="menu-tagline"><em>Command the Board. Claim the Crown.</em></p>
-      <div class="menu-ornament flip">
-        <span>✦</span><div class="orn-line"></div><span>✦</span>
-      </div>
-    </div>
-    <nav class="menu-nav">
-      <button class="menu-btn" onclick="showPanel('panel-multiplayer')">
-        <span class="mbtn-icon">⚔</span>
-        <span class="mbtn-body">
-          <span class="mbtn-title">Multiplayer</span>
-          <span class="mbtn-desc">Challenge a friend online</span>
-        </span>
-        <span class="mbtn-chevron">›</span>
-      </button>
-      <button class="menu-btn" onclick="showPanel('panel-computer')">
-        <span class="mbtn-icon">♞</span>
-        <span class="mbtn-body">
-          <span class="mbtn-title">vs Computer</span>
-          <span class="mbtn-desc">Face the iron engine</span>
-        </span>
-        <span class="mbtn-chevron">›</span>
-      </button>
-    </nav>
-    <div class="menu-footer">Two Players · Real-time · MMXXVI</div>
-  </div>
-
-  <!-- ── MULTIPLAYER PANEL ── -->
-  <div id="panel-multiplayer" class="menu-panel hidden">
-    <button class="back-btn" onclick="showPanel('menu-main')">← Retreat</button>
-    <div class="panel-title">ENTER THE FIELD</div>
-    <p class="panel-desc">Share your Room ID with an ally to begin the battle.</p>
-    <div class="field-group">
-      <label class="field-label">ROOM ID</label>
-      <input type="text" id="room-input" class="field-input" placeholder="e.g. castle99" maxlength="20"/>
-    </div>
-    <button class="action-btn" onclick="joinRoom()">Deploy to Battle</button>
-    <p class="field-hint">Two browser tabs on the same device works too.</p>
-  </div>
-
-  <!-- ── COMPUTER PANEL ── -->
-  <div id="panel-computer" class="menu-panel hidden">
-    <button class="back-btn" onclick="showPanel('menu-main')">← Retreat</button>
-    <div class="panel-title">CHOOSE YOUR FOE</div>
-    <p class="panel-desc">Select the engine's strength before marching to war.</p>
-    <div class="diff-grid">
-      <button class="diff-card active" data-diff="easy" onclick="setDiff('easy')">
-        <span class="dc-icon">🕯</span>
-        <span class="dc-name">Squire</span>
-        <span class="dc-hint">For beginners</span>
-      </button>
-      <button class="diff-card" data-diff="medium" onclick="setDiff('medium')">
-        <span class="dc-icon">⚔</span>
-        <span class="dc-name">Knight</span>
-        <span class="dc-hint">Balanced challenge</span>
-      </button>
-      <button class="diff-card" data-diff="hard" onclick="setDiff('hard')">
-        <span class="dc-icon">👑</span>
-        <span class="dc-name">King</span>
-        <span class="dc-hint">Merciless engine</span>
-      </button>
-    </div>
-    <button class="action-btn" onclick="joinComputer()">March to War</button>
-  </div>
-</div>
-
-<!-- ═══════════════  SCREEN 3: GAME  ═══════════════ -->
-<div id="screen-game" class="screen">
-  <div class="game-bg"><div class="game-vignette"></div></div>
-  <div class="game-layout">
-
-    <!-- top bar -->
-    <div class="game-topbar">
-      <div class="gtb-player">
-        <div class="color-pip" id="my-dot"></div>
-        <span id="my-color-label">You</span>
-      </div>
-      <span class="gtb-room" id="status-msg">Connecting…</span>
-      <div class="turn-chip" id="turn-badge">—</div>
-    </div>
-
-    <!-- thinking -->
-    <div id="thinking-bar" class="thinking-bar" style="display:none;">
-      <div class="think-dots"><i></i><i></i><i></i></div>
-      <span>Engine is calculating…</span>
-    </div>
-
-    <!-- board -->
-    <div class="board-wrapper">
-      <div class="rank-labels" id="rank-labels"></div>
-      <div class="board-col">
-        <div id="board"></div>
-        <div class="file-labels" id="file-labels"></div>
+      <div class="load-content">
+        <div class="load-crest">
+          <svg class="crest-svg" viewBox="0 0 160 160">
+            <circle
+              cx="80"
+              cy="80"
+              r="74"
+              fill="none"
+              stroke="rgba(201,146,42,0.25)"
+              stroke-width="1"
+            />
+            <circle
+              cx="80"
+              cy="80"
+              r="62"
+              fill="none"
+              stroke="rgba(201,146,42,0.18)"
+              stroke-width="1"
+              stroke-dasharray="4 6"
+            />
+            <circle
+              cx="80"
+              cy="80"
+              r="50"
+              fill="none"
+              stroke="rgba(201,146,42,0.35)"
+              stroke-width="1.5"
+            />
+            <g stroke="rgba(201,146,42,0.5)" stroke-width="1.5">
+              <line x1="80" y1="6" x2="80" y2="16" />
+              <line x1="80" y1="144" x2="80" y2="154" />
+              <line x1="6" y1="80" x2="16" y2="80" />
+              <line x1="144" y1="80" x2="154" y2="80" />
+              <line x1="27" y1="27" x2="34" y2="34" />
+              <line x1="126" y1="126" x2="133" y2="133" />
+              <line x1="27" y1="133" x2="34" y2="126" />
+              <line x1="126" y1="34" x2="133" y2="27" />
+            </g>
+            <circle
+              class="spin-ring"
+              cx="80"
+              cy="80"
+              r="68"
+              fill="none"
+              stroke="rgba(201,146,42,0.6)"
+              stroke-width="1.5"
+              stroke-dasharray="12 300"
+            />
+          </svg>
+          <div class="crest-piece">♟</div>
+        </div>
+        <h1 class="load-title">ROYAL CHESS</h1>
+        <div class="load-sub">Est. MMXXVI</div>
+        <div class="load-bar-wrap">
+          <div class="load-track">
+            <div class="load-fill" id="load-bar"></div>
+          </div>
+          <div class="load-status" id="load-label">Summoning the pieces…</div>
+        </div>
+        <div class="corner-deco tl"></div>
+        <div class="corner-deco tr"></div>
+        <div class="corner-deco bl"></div>
+        <div class="corner-deco br"></div>
       </div>
     </div>
 
-    <!-- move log -->
-    <div class="movelog">
-      <span class="movelog-title">BATTLE LOG</span>
-      <div class="movelog-entries" id="move-log"></div>
-    </div>
-
-  </div>
-</div>
-
-<!-- ═══════════════  SCREEN 4: RESULT  ═══════════════ -->
-<div id="screen-result" class="screen">
-  <div class="result-bg">
-    <div id="result-particles" class="result-particles"></div>
-    <div class="result-vignette"></div>
-  </div>
-  <div class="result-content">
-    <div class="result-ring">
-      <div class="result-emblem" id="result-emblem">♔</div>
-    </div>
-    <div class="result-verdict" id="result-verdict">VICTORY</div>
-    <div class="result-subtitle" id="result-subtitle">You have conquered the board.</div>
-    <div class="result-divider"><span>✦</span><div></div><span>✦</span></div>
-    <div class="result-stats">
-      <div class="rstat">
-        <div class="rstat-val" id="stat-moves">—</div>
-        <div class="rstat-key">Moves Played</div>
+    <!-- ═══ MENU ═══ -->
+    <div id="screen-menu" class="screen">
+      <div class="menu-bg">
+        <div class="menu-chess-pattern"></div>
+        <div class="menu-vignette"></div>
       </div>
-      <div class="rstat-sep">|</div>
-      <div class="rstat">
-        <div class="rstat-val" id="stat-color">—</div>
-        <div class="rstat-key">Your Pieces</div>
+
+      <div id="menu-main" class="menu-panel">
+        <div class="menu-header">
+          <div class="menu-ornament">
+            <span>✦</span>
+            <div class="orn-line"></div>
+            <span>✦</span>
+          </div>
+          <h1 class="menu-title">ROYAL<br />CHESS</h1>
+          <p class="menu-tagline">
+            <em>Command the Board. Claim the Crown.</em>
+          </p>
+          <div class="menu-ornament flip">
+            <span>✦</span>
+            <div class="orn-line"></div>
+            <span>✦</span>
+          </div>
+        </div>
+        <nav class="menu-nav">
+          <button
+            class="menu-btn"
+            onclick="
+              playClick();
+              showPanel('panel-multiplayer');
+            "
+          >
+            <span class="mbtn-icon">⚔</span>
+            <span class="mbtn-body"
+              ><span class="mbtn-title">Multiplayer</span
+              ><span class="mbtn-desc">Challenge a friend online</span></span
+            >
+            <span class="mbtn-chevron">›</span>
+          </button>
+          <button
+            class="menu-btn"
+            onclick="
+              playClick();
+              showPanel('panel-computer');
+            "
+          >
+            <span class="mbtn-icon">♞</span>
+            <span class="mbtn-body"
+              ><span class="mbtn-title">vs Computer</span
+              ><span class="mbtn-desc">Face the iron engine</span></span
+            >
+            <span class="mbtn-chevron">›</span>
+          </button>
+        </nav>
+        <div class="menu-util-row">
+          <button
+            class="util-btn"
+            onclick="
+              playClick();
+              openSettings();
+            "
+          >
+            <span class="util-icon">⚙</span><span>Settings</span>
+          </button>
+          <button class="util-btn" onclick="toggleSound()">
+            <span class="util-icon" id="sound-icon">🔊</span
+            ><span id="sound-label">Sound On</span>
+          </button>
+        </div>
+        <div class="menu-footer">Two Players · Real-time · MMXXVI</div>
+      </div>
+
+      <div id="panel-multiplayer" class="menu-panel hidden">
+        <button
+          class="back-btn"
+          onclick="
+            playClick();
+            showPanel('menu-main');
+          "
+        >
+          ← Retreat
+        </button>
+        <div class="panel-title">ENTER THE FIELD</div>
+        <p class="panel-desc">Share your Room ID with an ally.</p>
+        <div class="field-group">
+          <label class="field-label">ROOM ID</label>
+          <input
+            type="text"
+            id="room-input"
+            class="field-input"
+            placeholder="e.g. castle99"
+            maxlength="20"
+          />
+        </div>
+        <div class="field-group">
+          <label class="field-label">TIME CONTROL</label>
+          <div class="timer-grid" id="timer-select-mp">
+            <button class="timer-btn active" data-time="0">∞ No Limit</button>
+            <button class="timer-btn" data-time="180">3 min</button>
+            <button class="timer-btn" data-time="300">5 min</button>
+            <button class="timer-btn" data-time="600">10 min</button>
+          </div>
+        </div>
+        <button
+          class="action-btn"
+          onclick="
+            playClick();
+            joinRoom();
+          "
+        >
+          Deploy to Battle
+        </button>
+        <p class="field-hint">
+          Two browser tabs on the same device also works.
+        </p>
+      </div>
+
+      <div id="panel-computer" class="menu-panel hidden">
+        <button
+          class="back-btn"
+          onclick="
+            playClick();
+            showPanel('menu-main');
+          "
+        >
+          ← Retreat
+        </button>
+        <div class="panel-title">CHOOSE YOUR FOE</div>
+        <p class="panel-desc">Select the engine's strength.</p>
+        <div class="diff-grid">
+          <button
+            class="diff-card active"
+            data-diff="easy"
+            onclick="
+              playClick();
+              setDiff('easy');
+            "
+          >
+            <span class="dc-icon">🕯</span><span class="dc-name">Squire</span
+            ><span class="dc-hint">Beginner</span>
+          </button>
+          <button
+            class="diff-card"
+            data-diff="medium"
+            onclick="
+              playClick();
+              setDiff('medium');
+            "
+          >
+            <span class="dc-icon">⚔</span> <span class="dc-name">Knight</span
+            ><span class="dc-hint">Balanced</span>
+          </button>
+          <button
+            class="diff-card"
+            data-diff="hard"
+            onclick="
+              playClick();
+              setDiff('hard');
+            "
+          >
+            <span class="dc-icon">👑</span><span class="dc-name">King</span
+            ><span class="dc-hint">Merciless</span>
+          </button>
+        </div>
+        <div class="field-group" style="margin-top: 14px">
+          <label class="field-label">TIME CONTROL</label>
+          <div class="timer-grid" id="timer-select-cpu">
+            <button class="timer-btn active" data-time="0">∞ No Limit</button>
+            <button class="timer-btn" data-time="180">3 min</button>
+            <button class="timer-btn" data-time="300">5 min</button>
+            <button class="timer-btn" data-time="600">10 min</button>
+          </div>
+        </div>
+        <button
+          class="action-btn"
+          onclick="
+            playClick();
+            joinComputer();
+          "
+        >
+          March to War
+        </button>
       </div>
     </div>
-    <div class="result-actions">
-      <button class="rbtn primary" onclick="location.reload()">⚔ Play Again</button>
-      <button class="rbtn secondary" onclick="goToMenu()">↩ Main Menu</button>
-    </div>
-  </div>
-</div>
 
-<script src="script.js"></script>
-</body>
+    <!-- ═══ GAME ═══ -->
+    <div id="screen-game" class="screen">
+      <div class="game-bg"><div class="game-vignette"></div></div>
+      <div class="game-layout">
+        <!-- TOP BAR -->
+        <div class="game-topbar">
+          <div class="gtb-player">
+            <div class="color-pip" id="my-dot"></div>
+            <span id="my-color-label">You</span>
+          </div>
+          <span class="gtb-room" id="status-msg">Connecting…</span>
+          <div class="gtb-actions">
+            <button class="icon-btn" onclick="togglePause()" id="pause-btn">
+              ⏸
+            </button>
+            <button
+              class="icon-btn"
+              onclick="
+                playClick();
+                openSettings();
+              "
+            >
+              ⚙
+            </button>
+          </div>
+        </div>
+
+        <!-- BOARD AREA -->
+        <div class="board-area">
+          <div class="board-wrapper">
+            <div class="rank-labels" id="rank-labels"></div>
+            <div class="board-col">
+              <div id="board"></div>
+              <div class="file-labels" id="file-labels"></div>
+            </div>
+          </div>
+          <!-- Mobile-only turn chip under board -->
+          <div
+            class="turn-chip-mobile"
+            id="turn-badge-mobile"
+            style="margin-top: 8px"
+          >
+            —
+          </div>
+        </div>
+
+        <!-- SIDEBAR -->
+        <div class="game-sidebar">
+          <!-- Turn chip (desktop) -->
+          <div class="turn-chip-desktop" id="turn-badge-desktop">—</div>
+
+          <!-- Timer -->
+          <div class="timers-row" id="timers-row" style="display: none">
+            <div class="timer-box">
+              <div class="timer-label" id="timer-opp-label">Opponent</div>
+              <div class="timer-display" id="timer-opp-val">—</div>
+              <div class="timer-bar-track">
+                <div class="timer-bar-fill" id="timer-opp-bar"></div>
+              </div>
+            </div>
+            <div class="timer-sep">⚔</div>
+            <div class="timer-box">
+              <div class="timer-label" id="timer-my-label">You</div>
+              <div class="timer-display" id="timer-my-val">—</div>
+              <div class="timer-bar-track">
+                <div class="timer-bar-fill" id="timer-my-bar"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Thinking -->
+          <div id="thinking-bar" class="thinking-bar" style="display: none">
+            <div class="think-dots"><i></i><i></i><i></i></div>
+            <span>Engine calculating…</span>
+          </div>
+
+          <!-- Status banner -->
+          <div
+            id="status-banner"
+            class="status-banner"
+            style="display: none"
+          ></div>
+
+          <!-- Move History (always visible in sidebar) -->
+          <div class="history-sidebar">
+            <div class="history-header">
+              <span class="history-title">MOVE HISTORY</span>
+            </div>
+            <div class="history-list" id="history-list"></div>
+            <div class="history-nav">
+              <button class="hist-btn" onclick="historyStep(-1)">◀</button>
+              <span class="hist-pos" id="hist-pos">—</span>
+              <button class="hist-btn" onclick="historyStep(1)">▶</button>
+              <button class="hist-btn hist-live" onclick="historyGoLive()">
+                Live ⚡
+              </button>
+            </div>
+          </div>
+        </div>
+        <!-- /sidebar -->
+
+        <!-- BOTTOM ACTIONS -->
+        <div class="game-actions-row">
+          <button
+            class="game-act-btn resign-btn"
+            onclick="confirmResign()"
+            id="resign-btn"
+          >
+            ⚑ Resign
+          </button>
+          <button
+            class="game-act-btn draw-btn"
+            onclick="offerDraw()"
+            id="draw-btn"
+          >
+            🤝 Draw
+          </button>
+        </div>
+      </div>
+      <!-- /game-layout -->
+    </div>
+
+    <!-- ═══ RESULT ═══ -->
+    <div id="screen-result" class="screen">
+      <div class="result-bg">
+        <div id="result-particles" class="result-particles"></div>
+        <div class="result-vignette"></div>
+      </div>
+      <div class="result-content">
+        <div class="result-ring">
+          <div class="result-emblem" id="result-emblem">♔</div>
+        </div>
+        <div class="result-verdict" id="result-verdict">VICTORY</div>
+        <div class="result-subtitle" id="result-subtitle">
+          You have conquered the board.
+        </div>
+        <div class="result-divider">
+          <span>✦</span>
+          <div></div>
+          <span>✦</span>
+        </div>
+        <div class="result-stats">
+          <div class="rstat">
+            <div class="rstat-val" id="stat-moves">—</div>
+            <div class="rstat-key">Moves Played</div>
+          </div>
+          <div class="rstat-sep">|</div>
+          <div class="rstat">
+            <div class="rstat-val" id="stat-color">—</div>
+            <div class="rstat-key">Your Pieces</div>
+          </div>
+        </div>
+        <div class="result-actions">
+          <button class="rbtn primary" onclick="location.reload()">
+            ⚔ Play Again
+          </button>
+          <button class="rbtn secondary" onclick="goToMenu()">
+            ↩ Main Menu
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ SETTINGS ═══ -->
+    <div id="settings-overlay" class="modal-overlay hidden">
+      <div class="settings-modal">
+        <div class="modal-header">
+          <h2 class="modal-title">Settings</h2>
+          <button class="modal-close" onclick="closeSettings()">✕</button>
+        </div>
+        <div class="setting-row">
+          <div class="setting-icon">🔊</div>
+          <div class="setting-body">
+            <div class="setting-name">Sound Effects</div>
+            <div class="setting-desc">Toggle game sounds</div>
+          </div>
+          <label class="toggle-switch"
+            ><input
+              type="checkbox"
+              id="setting-sound"
+              checked
+              onchange="onSoundToggle(this)" /><span class="toggle-track"
+              ><span class="toggle-thumb"></span></span
+          ></label>
+        </div>
+        <div class="setting-row">
+          <div class="setting-icon">📐</div>
+          <div class="setting-body">
+            <div class="setting-name">Move Hints</div>
+            <div class="setting-desc">Highlight last move</div>
+          </div>
+          <label class="toggle-switch"
+            ><input
+              type="checkbox"
+              id="setting-hints"
+              checked
+              onchange="onHintsToggle(this)" /><span class="toggle-track"
+              ><span class="toggle-thumb"></span></span
+          ></label>
+        </div>
+        <div class="setting-row setting-row-block">
+          <div class="setting-row-top">
+            <div class="setting-icon">🎨</div>
+            <div class="setting-body">
+              <div class="setting-name">Board Theme</div>
+              <div class="setting-desc">Change board colours</div>
+            </div>
+          </div>
+          <div class="theme-grid">
+            <button
+              class="theme-swatch active"
+              data-theme="classic"
+              onclick="setTheme('classic')"
+            >
+              <span class="sw-light" style="background: #f0d9b5"></span
+              ><span class="sw-dark" style="background: #b58863"></span
+              ><span class="sw-name">Classic</span>
+            </button>
+            <button
+              class="theme-swatch"
+              data-theme="walnut"
+              onclick="setTheme('walnut')"
+            >
+              <span class="sw-light" style="background: #e8c99a"></span
+              ><span class="sw-dark" style="background: #7a4a2e"></span
+              ><span class="sw-name">Walnut</span>
+            </button>
+            <button
+              class="theme-swatch"
+              data-theme="slate"
+              onclick="setTheme('slate')"
+            >
+              <span class="sw-light" style="background: #cdd5e0"></span
+              ><span class="sw-dark" style="background: #4a6080"></span
+              ><span class="sw-name">Slate</span>
+            </button>
+            <button
+              class="theme-swatch"
+              data-theme="emerald"
+              onclick="setTheme('emerald')"
+            >
+              <span class="sw-light" style="background: #d4edda"></span
+              ><span class="sw-dark" style="background: #2e7d44"></span
+              ><span class="sw-name">Emerald</span>
+            </button>
+            <button
+              class="theme-swatch"
+              data-theme="midnight"
+              onclick="setTheme('midnight')"
+            >
+              <span class="sw-light" style="background: #8892a4"></span
+              ><span class="sw-dark" style="background: #1e2840"></span
+              ><span class="sw-name">Midnight</span>
+            </button>
+            <button
+              class="theme-swatch"
+              data-theme="coral"
+              onclick="setTheme('coral')"
+            >
+              <span class="sw-light" style="background: #f5dcd4"></span
+              ><span class="sw-dark" style="background: #c0604a"></span
+              ><span class="sw-name">Coral</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ PAUSE ═══ -->
+    <div id="pause-overlay" class="modal-overlay hidden">
+      <div class="pause-modal">
+        <div class="pause-emblem">⏸</div>
+        <div class="pause-title">GAME PAUSED</div>
+        <div class="pause-btns">
+          <button class="rbtn primary" onclick="resumeGame()">▶ Resume</button>
+          <button
+            class="rbtn secondary"
+            onclick="
+              playClick();
+              openSettings();
+            "
+          >
+            ⚙ Settings
+          </button>
+          <button class="rbtn danger" onclick="goToMenu()">↩ Quit Game</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ PROMOTION ═══ -->
+    <div id="promo-overlay" class="modal-overlay hidden">
+      <div class="promo-modal">
+        <div class="promo-title">PROMOTE YOUR PAWN</div>
+        <div class="promo-pieces" id="promo-pieces"></div>
+      </div>
+    </div>
+
+    <!-- ═══ RESIGN CONFIRM ═══ -->
+    <div id="resign-overlay" class="modal-overlay hidden">
+      <div class="pause-modal">
+        <div class="pause-emblem">⚑</div>
+        <div class="pause-title">RESIGN?</div>
+        <p
+          style="
+            color: var(--muted);
+            font-size: 0.85rem;
+            margin-bottom: 20px;
+            font-style: italic;
+            text-align: center;
+          "
+        >
+          This will end the game.
+        </p>
+        <div class="pause-btns">
+          <button class="rbtn danger" onclick="doResign()">Yes, Resign</button>
+          <button class="rbtn secondary" onclick="closeResign()">Cancel</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ DRAW OFFER ═══ -->
+    <div id="draw-overlay" class="modal-overlay hidden">
+      <div class="pause-modal">
+        <div class="pause-emblem">🤝</div>
+        <div class="pause-title">DRAW OFFERED</div>
+        <p
+          style="
+            color: var(--muted);
+            font-size: 0.85rem;
+            margin-bottom: 20px;
+            font-style: italic;
+            text-align: center;
+          "
+        >
+          Your opponent offers a draw.
+        </p>
+        <div class="pause-btns">
+          <button class="rbtn primary" onclick="respondDraw(true)">
+            Accept
+          </button>
+          <button class="rbtn secondary" onclick="respondDraw(false)">
+            Decline
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <script src="script.js"></script>
+  </body>
 </html>

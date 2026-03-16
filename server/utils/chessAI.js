@@ -1,15 +1,12 @@
 /**
- * Chess AI — Minimax with Alpha-Beta Pruning + Piece-Square Tables
- * Difficulty maps to search depth: easy=1, medium=2, hard=3
+ * Chess AI — Minimax + Alpha-Beta + Piece-Square Tables
+ * Now uses getLegalMoves (respects check, castling, en passant)
  */
 
-const { isValidMove } = require('./moveValidator');
-const { applyMove, cloneBoard } = require('./boardUtils');
+const { getLegalMoves, applyMove, cloneBoard } = require('./boardUtils');
 
-// ── Piece values ──────────────────────────────────────────
-const PIECE_VALUES = { p: 100, n: 320, b: 330, r: 500, q: 900, k: 20000 };
+const PIECE_VALUES = { p:100, n:320, b:330, r:500, q:900, k:20000 };
 
-// ── Piece-Square Tables (from Black's perspective, rows 0–7 = ranks 8–1) ──
 const PST = {
   p: [
     [ 0,  0,  0,  0,  0,  0,  0,  0],
@@ -76,82 +73,58 @@ const PST = {
 function getPST(piece, row, col, isBlack) {
   const p = piece.toLowerCase();
   if (!PST[p]) return 0;
-  // For white pieces, mirror the table vertically
   const r = isBlack ? row : 7 - row;
   return PST[p][r][col];
 }
 
-// ── Static board evaluation ───────────────────────────────
-// Positive = good for black (AI), Negative = good for white
 function evaluate(board) {
   let score = 0;
-  for (let r = 0; r < 8; r++) {
+  for (let r = 0; r < 8; r++)
     for (let c = 0; c < 8; c++) {
       const piece = board[r][c];
       if (!piece || piece === ' ') continue;
       const isBlack = piece === piece.toLowerCase();
-      const p = piece.toLowerCase();
-      const val = PIECE_VALUES[p] || 0;
+      const val = PIECE_VALUES[piece.toLowerCase()] || 0;
       const pst = getPST(piece, r, c, isBlack);
       if (isBlack) score += val + pst;
       else         score -= val + pst;
     }
-  }
   return score;
 }
 
-// ── Generate all legal moves for a color ─────────────────
-function generateMoves(board, color) {
-  const moves = [];
-  for (let fr = 0; fr < 8; fr++) {
-    for (let fc = 0; fc < 8; fc++) {
-      const piece = board[fr][fc];
-      if (!piece || piece === ' ') continue;
-      const isWhite = piece === piece.toUpperCase();
-      if (color === 'white' && !isWhite) continue;
-      if (color === 'black' && isWhite) continue;
-      for (let tr = 0; tr < 8; tr++) {
-        for (let tc = 0; tc < 8; tc++) {
-          if (isValidMove(board, fr, fc, tr, tc, color)) {
-            moves.push({ fromRow: fr, fromCol: fc, toRow: tr, toCol: tc });
-          }
-        }
-      }
-    }
-  }
-  return moves;
-}
-
-// ── Move ordering: captures first for better pruning ──────
 function orderMoves(board, moves) {
   return moves.sort((a, b) => {
-    const capA = board[a.toRow][a.toCol];
-    const capB = board[b.toRow][b.toCol];
-    const valA = (capA && capA !== ' ') ? (PIECE_VALUES[capA.toLowerCase()] || 0) : 0;
-    const valB = (capB && capB !== ' ') ? (PIECE_VALUES[capB.toLowerCase()] || 0) : 0;
-    return valB - valA;
+    const vA = board[a.toRow][a.toCol] !== ' ' ? (PIECE_VALUES[board[a.toRow][a.toCol].toLowerCase()]||0) : 0;
+    const vB = board[b.toRow][b.toCol] !== ' ' ? (PIECE_VALUES[board[b.toRow][b.toCol].toLowerCase()]||0) : 0;
+    return vB - vA;
   });
 }
 
-// ── Minimax with Alpha-Beta ───────────────────────────────
-function minimax(board, depth, alpha, beta, maximizing) {
+// Lightweight gameState for AI search (no castling needed — just avoid null crashes)
+function emptyGS() {
+  return { castlingRights: { white:{kingSide:false,queenSide:false}, black:{kingSide:false,queenSide:false} }, enPassant: null };
+}
+
+function minimax(board, depth, alpha, beta, maximizing, gs) {
   if (depth === 0) return { score: evaluate(board) };
-
   const color = maximizing ? 'black' : 'white';
-  const moves = orderMoves(board, generateMoves(board, color));
-
-  if (moves.length === 0) {
-    // No moves = checkmate or stalemate (simplified)
-    return { score: maximizing ? -15000 : 15000 };
-  }
+  const moves = orderMoves(board, getLegalMoves(board, color, gs));
+  if (moves.length === 0) return { score: maximizing ? -15000 : 15000 };
 
   let best = maximizing ? { score: -Infinity } : { score: Infinity };
   let bestMove = null;
 
   for (const move of moves) {
     const clone = cloneBoard(board);
-    applyMove(clone, move.fromRow, move.fromCol, move.toRow, move.toCol);
-    const result = minimax(clone, depth - 1, alpha, beta, !maximizing);
+    // Compute next en passant
+    const piece = clone[move.fromRow][move.fromCol];
+    const p = piece.toLowerCase();
+    let nextEP = null;
+    if (p === 'p' && Math.abs(move.toRow - move.fromRow) === 2)
+      nextEP = { row: (move.fromRow + move.toRow) / 2, col: move.fromCol };
+    const nextGS = { castlingRights: gs.castlingRights, enPassant: nextEP };
+    applyMove(clone, move.fromRow, move.fromCol, move.toRow, move.toCol, gs);
+    const result = minimax(clone, depth - 1, alpha, beta, !maximizing, nextGS);
 
     if (maximizing) {
       if (result.score > best.score) { best = result; bestMove = move; }
@@ -160,28 +133,23 @@ function minimax(board, depth, alpha, beta, maximizing) {
       if (result.score < best.score) { best = result; bestMove = move; }
       beta = Math.min(beta, result.score);
     }
-    if (beta <= alpha) break; // Prune
+    if (beta <= alpha) break;
   }
-
   return { score: best.score, move: bestMove };
 }
 
-// ── Public: pick the best move for the AI (black) ────────
-function getBestMove(board, difficulty) {
+function getBestMove(board, difficulty, gameState) {
   const depthMap = { easy: 1, medium: 2, hard: 3 };
   const depth = depthMap[difficulty] || 2;
+  const gs = gameState || emptyGS();
 
-  // Add slight randomness at easy difficulty
   if (difficulty === 'easy') {
-    const moves = generateMoves(board, 'black');
+    const moves = getLegalMoves(board, 'black', gs);
     if (moves.length === 0) return null;
-    // 40% chance of random move on easy
-    if (Math.random() < 0.4) {
-      return moves[Math.floor(Math.random() * moves.length)];
-    }
+    if (Math.random() < 0.4) return moves[Math.floor(Math.random() * moves.length)];
   }
 
-  const result = minimax(board, depth, -Infinity, Infinity, true);
+  const result = minimax(board, depth, -Infinity, Infinity, true, gs);
   return result.move || null;
 }
 
