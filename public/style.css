@@ -986,3 +986,81 @@ html, body {
   .right-aside { display:none; }
   #board { --bsize:min(calc(100vh - 20px), calc(100vw - 188px)); }
 }
+
+/* ── MOBILE BOTTOM BAR ── */
+.mobile-bottom-bar { display:none; }
+
+/* Override mobile responsive section */
+@media (max-width:760px) {
+  /* Undo old layout */
+  .left-aside {
+    flex-wrap:nowrap !important; gap:8px !important; padding:8px 10px !important;
+    align-items:stretch !important; height:auto !important;
+  }
+  .left-aside::before { display:none !important; }
+  .left-aside .aside-top    { display:none !important; }
+  .left-aside .aside-spacer { display:none !important; }
+  .left-aside .captured-row { display:none !important; }
+  .left-aside .status-banner{ display:none !important; }
+  .left-aside .thinking-bar { display:none !important; }
+  .left-aside .game-controls { display:none !important; }
+  .left-aside .player-card   { flex:1; min-width:0; padding:10px 12px; }
+  .left-aside .pc-avatar { font-size:1.3rem !important; width:30px !important; height:30px !important; }
+  .left-aside .pc-name   { font-size:0.82rem !important; }
+  .left-aside .pc-color  { font-size:0.6rem !important; }
+
+  .game-main {
+    flex:1; padding:6px 8px; min-height:0; overflow:hidden;
+  }
+  #board {
+    --bsize: min(calc(100vw - 28px), calc(100vh - 210px)) !important;
+  }
+  .coord-col { height:var(--bsize) !important; }
+
+  /* Show mobile bottom bar */
+  .mobile-bottom-bar {
+    display:flex !important;
+    align-items:center;
+    padding:8px 10px;
+    padding-bottom:calc(8px + env(safe-area-inset-bottom, 0px));
+    gap:8px;
+    background:linear-gradient(0deg, var(--dark1), var(--dark2));
+    border-top:1px solid rgba(212,168,67,0.15);
+    flex-shrink:0;
+  }
+  .mob-ctrl-btn {
+    flex:1;
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    gap:4px; padding:10px 4px;
+    background:linear-gradient(135deg, var(--card), var(--dark3));
+    border:1px solid rgba(212,168,67,0.15);
+    border-radius:12px; color:var(--t2);
+    font-size:1.25rem; cursor:pointer; transition:all 0.15s;
+    min-height:56px;
+  }
+  .mob-ctrl-btn span {
+    font-family:'Inter',sans-serif; font-size:0.56rem; font-weight:600;
+    letter-spacing:0.06em; text-transform:uppercase; color:var(--t3);
+  }
+  .mob-ctrl-btn:active {
+    background:var(--hover); border-color:rgba(212,168,67,0.45);
+    color:var(--gold2); transform:scale(0.95);
+  }
+  .mob-ctrl-btn.resign { border-color:rgba(224,85,85,0.2); }
+  .mob-ctrl-btn.resign:active { border-color:rgba(224,85,85,0.5); color:var(--red); }
+  .mob-ctrl-btn.draw   { border-color:rgba(91,140,245,0.2); }
+  .mob-ctrl-btn.draw:active { border-color:rgba(91,140,245,0.5); color:var(--blue); }
+  .mob-ctrl-btn:disabled { opacity:0.3; pointer-events:none; }
+}
+
+@media (max-width:480px) {
+  .mob-ctrl-btn { min-height:52px; font-size:1.15rem; }
+  .left-aside .player-card { padding:8px 10px !important; }
+}
+
+@media (max-height:500px) and (orientation:landscape) {
+  .mobile-bottom-bar { display:none !important; }
+  .left-aside .game-controls { display:grid !important; }
+  .left-aside .aside-top { display:flex !important; }
+  .left-aside .aside-spacer { display:flex !important; }
+}

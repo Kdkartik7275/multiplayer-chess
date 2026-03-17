@@ -201,8 +201,19 @@ function joinComputer(){
 //  PAUSE / RESIGN / DRAW
 // ══════════════════════════════════════════════════════
 function togglePause(){ SFX.click(); gamePaused?resumeGame():pauseGame(); }
-function pauseGame()  { gamePaused=true; stopTimer(); document.getElementById('pause-overlay').classList.remove('hidden'); document.getElementById('pause-btn').textContent='▶'; }
-function resumeGame() { SFX.click(); gamePaused=false; document.getElementById('pause-overlay').classList.add('hidden'); document.getElementById('pause-btn').textContent='⏸'; if(timerMaxSeconds>0&&!gameOver)startTimer(); }
+function pauseGame()  {
+  gamePaused=true; stopTimer();
+  document.getElementById('pause-overlay').classList.remove('hidden');
+  document.getElementById('pause-btn').textContent='▶';
+  const pbm=document.getElementById('pause-btn-mob'); if(pbm){pbm.childNodes[0].textContent='▶'; pbm.querySelector('span').textContent='Resume';}
+}
+function resumeGame() {
+  SFX.click(); gamePaused=false;
+  document.getElementById('pause-overlay').classList.add('hidden');
+  document.getElementById('pause-btn').textContent='⏸';
+  const pbm=document.getElementById('pause-btn-mob'); if(pbm){pbm.childNodes[0].textContent='⏸'; pbm.querySelector('span').textContent='Pause';}
+  if(timerMaxSeconds>0&&!gameOver)startTimer();
+}
 function confirmResign(){ if(gameOver)return; SFX.click(); document.getElementById('resign-overlay').classList.remove('hidden'); }
 function closeResign()  { SFX.click(); document.getElementById('resign-overlay').classList.add('hidden'); }
 function doResign()     { closeResign(); socket.emit('resign',{roomId}); }
@@ -326,12 +337,15 @@ function animatePieceMove(piece, fromRow, fromCol, toRow, toCol, done) {
   `;
   document.head.appendChild(styleEl);
 
-  // 2. Build flyer — sits at FROM square, no transition, only animation
+  // 2. Build flyer — use color directly, NO filter (filter causes double-animation on iOS)
   const flyer = document.createElement('span');
   flyer.textContent = GLYPHS[piece] || piece;
 
-  const filterWhite = `invert(1)`;
-  const filterBlack = `none`;
+  // White pieces: white fill + dark stroke via text-shadow outline trick
+  // Black pieces: black fill + light outline
+  // NO filter property at all — that was causing the double-play on iOS
+  const pieceColor  = isWhite ? '#ffffff' : '#0d0d0d';
+  const strokeColor = isWhite ? '#0d0d1a' : 'rgba(210,190,150,0.95)';
 
   flyer.style.cssText = `
     position:fixed;
@@ -343,9 +357,9 @@ function animatePieceMove(piece, fromRow, fromCol, toRow, toCol, done) {
     display:block;
     pointer-events:none;
     z-index:9999;
-    color:#000000;
+    color:${pieceColor};
+    -webkit-text-stroke:1.5px ${strokeColor};
     will-change:transform;
-    filter:${isWhite ? filterWhite : filterBlack};
     animation:${id} ${DURATION}ms cubic-bezier(0.25,0.1,0.25,1.0) forwards;
   `;
 
@@ -539,8 +553,15 @@ function historyGoLive(){
 }
 
 function updateGameActButtons(){
-  const d=gameOver; ['resign-btn','draw-btn'].forEach(id=>{const el=document.getElementById(id);if(el)el.disabled=d;});
-  const drawBtn=document.getElementById('draw-btn'); if(drawBtn)drawBtn.disabled=d||isVsComputer;
+  const d = gameOver;
+  // Desktop sidebar buttons
+  const rb = document.getElementById('resign-btn'); if(rb) rb.disabled = d;
+  const db = document.getElementById('draw-btn');   if(db) db.disabled = d || isVsComputer;
+  // Mobile bottom bar buttons
+  const rbm = document.getElementById('resign-btn-mob'); if(rbm) rbm.disabled = d;
+  const dbm = document.getElementById('draw-btn-mob');   if(dbm) dbm.disabled = d || isVsComputer;
+  // Also sync pause btn text
+  const pbm = document.getElementById('pause-btn-mob'); if(pbm) pbm.querySelector('span').textContent = gamePaused ? 'Resume' : 'Pause';
 }
 
 // ══════════════════════════════════════════════════════
