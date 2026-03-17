@@ -1424,12 +1424,10 @@ body {
 }
 
 .piece.white {
-  filter: invert(1) drop-shadow(0 1px 0 #000)drop-shadow(0 -1px 0 #000) drop-shadow(1px 0 0 #000)drop-shadow(-1px 0 0 #000) drop-shadow(0 2px 4px rgba(0, 0, 0, .6));
+  filter: invert(1) drop-shadow(0 1px 3px rgba(0,0,0,0.55));
 }
-
 .piece.black {
-  filter:
-    drop-shadow(0 1px 0 rgba(220, 200, 160, .9))drop-shadow(0 -1px 0 rgba(220, 200, 160, .9)) drop-shadow(1px 0 0 rgba(220, 200, 160, .9))drop-shadow(-1px 0 0 rgba(220, 200, 160, .9)) drop-shadow(0 2px 4px rgba(0, 0, 0, .8));
+  filter: drop-shadow(0 1px 3px rgba(0,0,0,0.7));
 }
 
 .sq:hover .piece {
@@ -1722,11 +1720,11 @@ body {
 
   .game-center {
     padding: 0;
-    justify-content: flex-start;
+    justify-content: space-around;
   }
 
   #board {
-    --bsize: min(calc(100vw - 28px), calc(100vh - 260px));
+    --bsize: min(calc(100vw - 28px), calc(120vh - 260px));
   }
 
   .board-wrap {

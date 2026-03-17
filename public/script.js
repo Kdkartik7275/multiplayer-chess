@@ -395,7 +395,6 @@ function joinRoom() {
   socket.emit("joinRoom", { roomId, timerSeconds });
   switchScreen("screen-menu", "screen-game");
   setMode("Multiplayer");
-  document.getElementById("engine-info").style.display = "none";
   buildLabels();
 }
 function joinComputer() {
@@ -404,12 +403,6 @@ function joinComputer() {
   switchScreen("screen-menu", "screen-game");
   const names = { easy: "vs Squire", medium: "vs Knight", hard: "vs King" };
   setMode(names[selectedDiff]);
-  document.getElementById("engine-info").style.display = "flex";
-  document.getElementById("engine-depth").textContent = {
-    easy: "Depth 1 · Casual",
-    medium: "Depth 2 · Balanced",
-    hard: "Depth 3 · Ruthless",
-  }[selectedDiff];
   buildLabels();
 }
 function setMode(txt) {
@@ -643,45 +636,100 @@ function renderBoard(bd, overrideCheck) {
 }
 
 // ══════════════════════════════════════════════════════
-//  ANIMATION
+//  ANIMATION  ← FIXED
 // ══════════════════════════════════════════════════════
 let _animId = 0;
 function animatePieceMove(piece, fromRow, fromCol, toRow, toCol, done) {
   const boardEl = document.getElementById("board");
   const boardRect = boardEl.getBoundingClientRect();
-  const sq = boardRect.width / 8;
-  const dFromR = myColor === "black" ? 7 - fromRow : fromRow,
-    dFromC = myColor === "black" ? 7 - fromCol : fromCol;
-  const dToR = myColor === "black" ? 7 - toRow : toRow,
-    dToC = myColor === "black" ? 7 - toCol : toCol;
-  const fx = boardRect.left + dFromC * sq,
-    fy = boardRect.top + dFromR * sq;
-  const tx = boardRect.left + dToC * sq,
-    ty = boardRect.top + dToR * sq;
-  const dx = tx - fx,
-    dy = ty - fy;
+  const sqSize = boardRect.width / 8;
+
+  // Display coordinates (account for board flip)
+  const dFromR = myColor === "black" ? 7 - fromRow : fromRow;
+  const dFromC = myColor === "black" ? 7 - fromCol : fromCol;
+  const dToR   = myColor === "black" ? 7 - toRow   : toRow;
+  const dToC   = myColor === "black" ? 7 - toCol   : toCol;
+
+  // Pixel positions of source and destination squares
+  const fx = boardRect.left + dFromC * sqSize;
+  const fy = boardRect.top  + dFromR * sqSize;
+  const tx = boardRect.left + dToC   * sqSize;
+  const ty = boardRect.top  + dToR   * sqSize;
+
   const isWhite = piece === piece.toUpperCase();
-  const id = "pm" + ++_animId;
-  const DURATION = 240;
-  const styleEl = document.createElement("style");
-  styleEl.id = id + "-style";
-  styleEl.textContent = `@keyframes ${id}{0%{transform:translate(0,0)scale(1.22);}40%{transform:translate(${dx * 0.5}px,${dy * 0.5}px)scale(1.28);}100%{transform:translate(${dx}px,${dy}px)scale(1.18);}}`;
-  document.head.appendChild(styleEl);
+  const glyph   = GLYPHS[piece] || piece;
+  const DURATION = 210; // ms — snappy but smooth
+
+  // Build a canvas-level flying element that perfectly mirrors the .piece CSS
   const flyer = document.createElement("span");
-  flyer.textContent = GLYPHS[piece] || piece;
-  flyer.style.cssText = `position:fixed;left:${fx}px;top:${fy}px;width:${sq}px;height:${sq}px;font-size:${sq * 0.74}px;line-height:${sq}px;text-align:center;display:block;pointer-events:none;z-index:9999;color:#000;will-change:transform;filter:${isWhite ? "invert(1)" : "none"};animation:${id} ${DURATION}ms cubic-bezier(.25,.1,.25,1) forwards;`;
+
+  // Base styles: position & size match the actual square
+  flyer.style.cssText = [
+    "position:fixed",
+    `left:${fx}px`,
+    `top:${fy}px`,
+    `width:${sqSize}px`,
+    `height:${sqSize}px`,
+    `font-size:${sqSize * 0.74}px`,
+    "line-height:1",
+    "text-align:center",
+    "display:flex",
+    "align-items:center",
+    "justify-content:center",
+    "pointer-events:none",
+    "z-index:9999",
+    // EXACT same rendering as .piece.white / .piece.black in the CSS
+    // White: invert(1) so the black glyph appears white + outline
+    // Black: cream outline so glyph stands out on light squares
+    isWhite
+      ? [
+          "color:#000000",
+          "-webkit-text-stroke:0",
+          "filter:invert(1) drop-shadow(0 1px 0 #000) drop-shadow(0 -1px 0 #000) drop-shadow(1px 0 0 #000) drop-shadow(-1px 0 0 #000)",
+        ].join(";")
+      : [
+          "color:#000000",
+          "-webkit-text-stroke:0",
+          "filter:drop-shadow(0 1px 0 rgba(220,200,160,0.9)) drop-shadow(0 -1px 0 rgba(220,200,160,0.9)) drop-shadow(1px 0 0 rgba(220,200,160,0.9)) drop-shadow(-1px 0 0 rgba(220,200,160,0.9))",
+        ].join(";"),
+    // GPU-composited transform for zero-jank movement
+    "will-change:transform",
+    "transform-origin:center center",
+  ].join(";");
+
+  flyer.textContent = glyph;
   document.body.appendChild(flyer);
-  setTimeout(() => {
+
+  // Translate from source → destination using only transform (no layout thrash)
+  const dx = tx - fx;
+  const dy = ty - fy;
+
+  // Frame 0: start position (already at fx,fy via position:fixed)
+  // We animate via Web Animations API for precise, compositor-driven motion
+  const anim = flyer.animate(
+    [
+      { transform: "translate(0,0) scale(1.18)",    offset: 0   },
+      { transform: `translate(${dx * 0.45}px, ${dy * 0.45}px) scale(1.26)`, offset: 0.4 },
+      { transform: `translate(${dx}px, ${dy}px) scale(1.12)`,              offset: 1   },
+    ],
+    {
+      duration: DURATION,
+      easing: "cubic-bezier(0.25, 0.1, 0.25, 1)",
+      fill: "forwards",
+    }
+  );
+
+  anim.onfinish = () => {
     flyer.remove();
-    styleEl.remove();
     done();
+    // Landing flash on destination square
     document.querySelectorAll("#board .sq").forEach((sq) => {
       if (+sq.dataset.row === toRow && +sq.dataset.col === toCol) {
         sq.classList.add("piece-landing");
-        setTimeout(() => sq.classList.remove("piece-landing"), 300);
+        setTimeout(() => sq.classList.remove("piece-landing"), 280);
       }
     });
-  }, DURATION + 30);
+  };
 }
 
 // ══════════════════════════════════════════════════════
@@ -777,7 +825,6 @@ function showPromo(fromRow, fromCol, toRow, toCol) {
 //  TURN + ACTIVE CARD
 // ══════════════════════════════════════════════════════
 function updateTurnIndicators(turn, winner, status) {
-  // Sidebar dots — using sb-card active-player class
   const myDm = document.getElementById("my-dot-mobile"),
     oppDm = document.getElementById("opp-dot-mobile");
   if (myDm) myDm.className = "mob-dot";
@@ -1091,7 +1138,7 @@ socket.on("roomFull", ({ message }) => {
 });
 
 // ══════════════════════════════════════════════════════
-//  HISTORY (stub — no move list UI but keep snapshots for animation)
+//  HISTORY
 // ══════════════════════════════════════════════════════
 function recordSnapshot(bd, lm, chkSq) {
   boardSnapshots.push({
