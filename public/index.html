@@ -1,607 +1,337 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta
-      name="viewport"
-      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
-    />
-    <!-- Tells browser we handle our own dark/light — prevents forced color overrides on pieces -->
-    <meta name="color-scheme" content="dark" />
-    <meta name="supported-color-schemes" content="dark" />
-    <title>Royal Chess</title>
-    <script src="/socket.io/socket.io.js"></script>
-    <link rel="stylesheet" href="style.css" />
-  </head>
-  <body data-theme="classic">
-    <!-- ══════════════ LOADING ══════════════ -->
-    <div id="screen-loading" class="screen active">
-      <div class="bg-canvas"></div>
-      <div class="grid-overlay"></div>
-      <div class="vignette"></div>
-      <div class="load-inner">
-        <div class="load-crest">
-          <div class="load-ring"></div>
-          <div class="load-ring"></div>
-          <div class="load-ring"></div>
-          <div class="load-piece-main">♛</div>
-        </div>
-        <h1 class="load-title">ROYAL CHESS</h1>
-        <div class="load-sub">Strategy · Skill · Victory</div>
-        <div class="load-bar"><div class="load-fill" id="load-bar"></div></div>
-        <div class="load-msg" id="load-label">Summoning the pieces…</div>
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+  <!-- Tells browser we handle our own dark/light — prevents forced color overrides on pieces -->
+  <meta name="color-scheme" content="dark"/>
+  <meta name="supported-color-schemes" content="dark"/>
+  <title>Royal Chess</title>
+  <script src="/socket.io/socket.io.js"></script>
+  <link rel="stylesheet" href="style.css"/>
+</head>
+<body data-theme="classic">
+
+<!-- ══════════════ LOADING ══════════════ -->
+<div id="screen-loading" class="screen active">
+  <div class="bg-canvas"></div>
+  <div class="grid-overlay"></div>
+  <div class="vignette"></div>
+  <div class="load-inner">
+    <div class="load-crest">
+      <div class="load-ring"></div>
+      <div class="load-ring"></div>
+      <div class="load-ring"></div>
+      <div class="load-piece-main">♛</div>
+    </div>
+    <h1 class="load-title">ROYAL CHESS</h1>
+    <div class="load-sub">Strategy · Skill · Victory</div>
+    <div class="load-bar"><div class="load-fill" id="load-bar"></div></div>
+    <div class="load-msg" id="load-label">Summoning the pieces…</div>
+  </div>
+</div>
+
+<!-- ══════════════ MENU ══════════════ -->
+<div id="screen-menu" class="screen">
+
+  <!-- Left decorative panel -->
+  <div class="menu-left">
+    <div class="bg-canvas"></div>
+    <div class="grid-overlay"></div>
+    <div class="vignette"></div>
+    <!-- floating pieces injected by JS -->
+    <div id="float-pieces"></div>
+    <!-- 3D board -->
+    <div class="menu-board-wrap">
+      <div id="deco-board"></div>
+    </div>
+    <!-- Quote overlay -->
+    <div class="menu-left-content">
+      <div class="menu-left-quote">"Chess is the art of analysis."</div>
+      <div class="menu-left-attr">— Mikhail Botvinnik</div>
+    </div>
+  </div>
+
+  <!-- Right content panel -->
+  <div class="menu-right">
+
+    <!-- Logo -->
+    <div class="menu-logo">
+      <div class="logo-icon"><span class="logo-piece">♟</span></div>
+      <div>
+        <div class="logo-text-title">Royal Chess</div>
+        <div class="logo-text-sub">Real-time · Multiplayer · AI</div>
       </div>
     </div>
 
-    <!-- ══════════════ MENU ══════════════ -->
-    <div id="screen-menu" class="screen">
-      <!-- Left decorative panel -->
-      <div class="menu-left">
-        <div class="bg-canvas"></div>
-        <div class="grid-overlay"></div>
-        <div class="vignette"></div>
-        <!-- floating pieces injected by JS -->
-        <div id="float-pieces"></div>
-        <!-- 3D board -->
-        <div class="menu-board-wrap">
-          <div id="deco-board"></div>
-        </div>
-        <!-- Quote overlay -->
-        <div class="menu-left-content">
-          <div class="menu-left-quote">"Chess is the art of analysis."</div>
-          <div class="menu-left-attr">— Mikhail Botvinnik</div>
-        </div>
-      </div>
-
-      <!-- Right content panel -->
-      <div class="menu-right">
-        <!-- Logo -->
-        <div class="menu-logo">
-          <div class="logo-icon"><span class="logo-piece">♟</span></div>
-          <div>
-            <div class="logo-text-title">Royal Chess</div>
-            <div class="logo-text-sub">Real-time · Multiplayer · AI</div>
-          </div>
-        </div>
-
-        <!-- MAIN MENU -->
-        <div id="menu-main" class="menu-section">
-          <div class="menu-play-btns">
-            <button
-              class="play-card"
-              onclick="
-                playClick();
-                showPanel('panel-multiplayer');
-              "
-            >
-              <div class="pc-icon">⚔</div>
-              <div class="pc-body">
-                <div class="pc-title">Play Online</div>
-                <div class="pc-desc">Challenge a friend with a Room ID</div>
-              </div>
-              <div class="pc-arrow">›</div>
-            </button>
-            <button
-              class="play-card"
-              onclick="
-                playClick();
-                showPanel('panel-computer');
-              "
-            >
-              <div class="pc-icon">🤖</div>
-              <div class="pc-body">
-                <div class="pc-title">vs Computer</div>
-                <div class="pc-desc">Battle the AI engine</div>
-              </div>
-              <div class="pc-arrow">›</div>
-            </button>
-          </div>
-          <div class="menu-utils">
-            <button
-              class="util-btn"
-              onclick="
-                playClick();
-                openSettings();
-              "
-            >
-              ⚙ Settings
-            </button>
-            <button class="util-btn" id="sound-btn" onclick="toggleSound()">
-              🔊 Sound
-            </button>
-          </div>
-        </div>
-
-        <!-- MULTIPLAYER -->
-        <div id="panel-multiplayer" class="menu-section hidden">
-          <button
-            class="back-link"
-            onclick="
-              playClick();
-              showPanel('menu-main');
-            "
-          >
-            ← Back
-          </button>
-          <h2 class="panel-h2">Play Online</h2>
-          <div class="form-group">
-            <label class="form-label">Room ID</label>
-            <input
-              type="text"
-              id="room-input"
-              class="form-input"
-              placeholder="Enter room code…"
-              maxlength="20"
-            />
-          </div>
-          <div class="form-group">
-            <label class="form-label">Time Control</label>
-            <div class="time-pills" id="timer-select-mp">
-              <button class="time-pill active" data-time="0">∞</button>
-              <button class="time-pill" data-time="180">3 min</button>
-              <button class="time-pill" data-time="300">5 min</button>
-              <button class="time-pill" data-time="600">10 min</button>
-            </div>
-          </div>
-          <button
-            class="btn-primary"
-            onclick="
-              playClick();
-              joinRoom();
-            "
-          >
-            Join Game →
-          </button>
-          <p class="form-hint">Share the same Room ID with your opponent</p>
-        </div>
-
-        <!-- VS COMPUTER -->
-        <div id="panel-computer" class="menu-section hidden">
-          <button
-            class="back-link"
-            onclick="
-              playClick();
-              showPanel('menu-main');
-            "
-          >
-            ← Back
-          </button>
-          <h2 class="panel-h2">vs Computer</h2>
-          <div class="form-group">
-            <label class="form-label">Difficulty</label>
-            <div class="diff-row">
-              <button
-                class="diff-pill active"
-                data-diff="easy"
-                onclick="
-                  playClick();
-                  setDiff('easy');
-                "
-              >
-                🕯 Squire
-              </button>
-              <button
-                class="diff-pill"
-                data-diff="medium"
-                onclick="
-                  playClick();
-                  setDiff('medium');
-                "
-              >
-                ⚔ Knight
-              </button>
-              <button
-                class="diff-pill"
-                data-diff="hard"
-                onclick="
-                  playClick();
-                  setDiff('hard');
-                "
-              >
-                👑 King
-              </button>
-            </div>
-          </div>
-          <div class="form-group">
-            <label class="form-label">Time Control</label>
-            <div class="time-pills" id="timer-select-cpu">
-              <button class="time-pill active" data-time="0">∞</button>
-              <button class="time-pill" data-time="180">3 min</button>
-              <button class="time-pill" data-time="300">5 min</button>
-              <button class="time-pill" data-time="600">10 min</button>
-            </div>
-          </div>
-          <button
-            class="btn-primary"
-            onclick="
-              playClick();
-              joinComputer();
-            "
-          >
-            Start Game →
-          </button>
-        </div>
-      </div>
-      <!-- /menu-right -->
-    </div>
-
-    <!-- ══════════════ GAME ══════════════ -->
-    <div id="screen-game" class="screen">
-      <div class="game-root">
-        <!-- LEFT SIDEBAR -->
-        <aside class="game-aside left-aside">
-          <div class="aside-top">
-            <div class="brand-sm">♟ Royal Chess</div>
-            <div class="mode-tag" id="mode-tag">vs Computer</div>
-          </div>
-
-          <!-- Opponent card -->
-          <div class="player-card" id="opponent-card">
-            <div class="pc-avatar" id="opp-avatar">♚</div>
-            <div class="pc-info">
-              <div class="pc-name" id="opp-name">Opponent</div>
-              <div class="pc-color" id="opp-color-label">Black</div>
-            </div>
-            <div class="pc-timer" id="opp-timer" style="display: none">
-              <div class="pc-time" id="timer-opp-val">—</div>
-              <div class="pc-timebar">
-                <div class="pc-timefill" id="timer-opp-bar"></div>
-              </div>
-            </div>
-          </div>
-
-          <div class="captured-row" id="captured-opp"></div>
-          <div
-            id="status-banner"
-            class="status-banner"
-            style="display: none"
-          ></div>
-          <div id="thinking-bar" class="thinking-bar" style="display: none">
-            <div class="think-dots"><i></i><i></i><i></i></div>
-            <span>Engine thinking…</span>
-          </div>
-
-          <div class="aside-spacer"></div>
-
-          <div class="captured-row" id="captured-me"></div>
-
-          <!-- My card -->
-          <div class="player-card" id="my-card">
-            <div class="pc-avatar" id="my-avatar">♙</div>
-            <div class="pc-info">
-              <div class="pc-name">You</div>
-              <div class="pc-color" id="my-color-label">White</div>
-            </div>
-            <div class="pc-timer" id="my-timer" style="display: none">
-              <div class="pc-time" id="timer-my-val">—</div>
-              <div class="pc-timebar">
-                <div class="pc-timefill" id="timer-my-bar"></div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Controls (desktop sidebar) -->
-          <div class="game-controls">
-            <button
-              class="ctrl-btn"
-              onclick="togglePause()"
-              id="pause-btn"
-              title="Pause"
-            >
-              ⏸
-            </button>
-            <button
-              class="ctrl-btn"
-              onclick="
-                playClick();
-                openSettings();
-              "
-              title="Settings"
-            >
-              ⚙
-            </button>
-            <button
-              class="ctrl-btn resign"
-              onclick="confirmResign()"
-              id="resign-btn"
-              title="Resign"
-            >
-              ⚑
-            </button>
-            <button
-              class="ctrl-btn draw"
-              onclick="offerDraw()"
-              id="draw-btn"
-              title="Draw"
-            >
-              ½
-            </button>
-          </div>
-        </aside>
-
-        <!-- BOARD COLUMN -->
-        <main class="game-main">
-          <div class="turn-row" id="opp-turn-row">
-            <div class="turn-dot" id="opp-turn-dot"></div>
-            <span id="opp-turn-label">Waiting…</span>
-          </div>
-          <div class="board-frame">
-            <div class="coord-col" id="rank-labels"></div>
-            <div>
-              <div id="board"></div>
-              <div class="coord-row" id="file-labels"></div>
-            </div>
-          </div>
-          <div class="turn-row" id="my-turn-row">
-            <div class="turn-dot" id="my-turn-dot"></div>
-            <span id="my-turn-label">Your Turn</span>
-          </div>
-        </main>
-
-        <!-- MOBILE BOTTOM BAR (hidden on desktop, shown on mobile) -->
-        <div class="mobile-bottom-bar">
-          <button
-            class="mob-ctrl-btn"
-            onclick="togglePause()"
-            id="pause-btn-mob"
-          >
-            ⏸<span>Pause</span>
-          </button>
-          <button
-            class="mob-ctrl-btn"
-            onclick="
-              playClick();
-              openSettings();
-            "
-          >
-            ⚙<span>Settings</span>
-          </button>
-          <button
-            class="mob-ctrl-btn resign"
-            onclick="confirmResign()"
-            id="resign-btn-mob"
-          >
-            ⚑<span>Resign</span>
-          </button>
-          <button
-            class="mob-ctrl-btn draw"
-            onclick="offerDraw()"
-            id="draw-btn-mob"
-          >
-            ½<span>Draw</span>
-          </button>
-        </div>
-
-        <!-- RIGHT SIDEBAR -->
-        <aside class="game-aside right-aside">
-          <div class="aside-top">
-            <span class="aside-title">Moves</span>
-            <button class="live-btn hist-live" onclick="historyGoLive()">
-              Live
-            </button>
-          </div>
-          <div class="move-list" id="move-list"></div>
-          <div class="hist-nav">
-            <button class="hist-nav-btn" onclick="historyStep(-Infinity)">
-              |◀
-            </button>
-            <button class="hist-nav-btn" onclick="historyStep(-1)">◀</button>
-            <button class="hist-nav-btn" onclick="historyStep(1)">▶</button>
-            <button class="hist-nav-btn" onclick="historyStep(Infinity)">
-              ▶|
-            </button>
-          </div>
-          <div class="aside-spacer"></div>
-          <div class="engine-info" id="engine-info" style="display: none">
-            <div class="engine-label">Engine Strength</div>
-            <div class="engine-depth" id="engine-depth">—</div>
-          </div>
-        </aside>
-      </div>
-    </div>
-
-    <!-- ══════════════ RESULT ══════════════ -->
-    <div id="screen-result" class="screen">
-      <div class="bg-canvas"></div>
-      <div class="vignette"></div>
-      <div class="result-card">
-        <div class="result-icon" id="result-icon">♔</div>
-        <div class="result-verdict" id="result-verdict">VICTORY</div>
-        <div class="result-sub" id="result-subtitle">
-          You delivered checkmate
-        </div>
-        <div class="result-hr"></div>
-        <div class="result-stats">
-          <div class="rs">
-            <div class="rs-val" id="stat-moves">—</div>
-            <div class="rs-key">Moves</div>
-          </div>
-          <div class="rs-div"></div>
-          <div class="rs">
-            <div class="rs-val" id="stat-color">—</div>
-            <div class="rs-key">Your Side</div>
-          </div>
-        </div>
-        <div class="result-btns">
-          <button class="btn-primary" onclick="location.reload()">
-            ⚔ Play Again
-          </button>
-          <button class="btn-ghost" onclick="goToMenu()">↩ Main Menu</button>
-        </div>
-      </div>
-      <div id="result-particles"></div>
-    </div>
-
-    <!-- ══════════════ SETTINGS MODAL ══════════════ -->
-    <div id="settings-overlay" class="modal-overlay hidden">
-      <div class="modal-card">
-        <div class="modal-head">
-          <span class="modal-title">Settings</span>
-          <button class="modal-x" onclick="closeSettings()">✕</button>
-        </div>
-        <div class="setting-row">
-          <div class="sr-left">
-            <div class="sr-icon">🔊</div>
-            <div class="sr-body">
-              <div class="sr-name">Sound Effects</div>
-              <div class="sr-desc">Game audio on/off</div>
-            </div>
-          </div>
-          <label class="toggle"
-            ><input
-              type="checkbox"
-              id="setting-sound"
-              checked
-              onchange="onSoundToggle(this)" /><span class="tgl-track"
-              ><span class="tgl-thumb"></span></span
-          ></label>
-        </div>
-        <div class="setting-row">
-          <div class="sr-left">
-            <div class="sr-icon">✨</div>
-            <div class="sr-body">
-              <div class="sr-name">Move Highlights</div>
-              <div class="sr-desc">Show last move</div>
-            </div>
-          </div>
-          <label class="toggle"
-            ><input
-              type="checkbox"
-              id="setting-hints"
-              checked
-              onchange="onHintsToggle(this)" /><span class="tgl-track"
-              ><span class="tgl-thumb"></span></span
-          ></label>
-        </div>
-        <div class="setting-row col">
-          <div class="sr-left">
-            <div class="sr-icon">🎨</div>
-            <div class="sr-body"><div class="sr-name">Board Theme</div></div>
-          </div>
-          <div class="theme-swatches">
-            <button
-              class="tsw active"
-              data-theme="classic"
-              onclick="setTheme('classic')"
-            >
-              <div class="tsw-colors">
-                <span style="background: #f0d9b5"></span
-                ><span style="background: #b58863"></span>
-              </div>
-              <em>Classic</em>
-            </button>
-            <button
-              class="tsw"
-              data-theme="walnut"
-              onclick="setTheme('walnut')"
-            >
-              <div class="tsw-colors">
-                <span style="background: #e8c99a"></span
-                ><span style="background: #7a4a2e"></span>
-              </div>
-              <em>Walnut</em>
-            </button>
-            <button class="tsw" data-theme="slate" onclick="setTheme('slate')">
-              <div class="tsw-colors">
-                <span style="background: #cdd5e0"></span
-                ><span style="background: #4a6080"></span>
-              </div>
-              <em>Slate</em>
-            </button>
-            <button
-              class="tsw"
-              data-theme="emerald"
-              onclick="setTheme('emerald')"
-            >
-              <div class="tsw-colors">
-                <span style="background: #c8e8d4"></span
-                ><span style="background: #2e6644"></span>
-              </div>
-              <em>Emerald</em>
-            </button>
-            <button
-              class="tsw"
-              data-theme="midnight"
-              onclick="setTheme('midnight')"
-            >
-              <div class="tsw-colors">
-                <span style="background: #7880a0"></span
-                ><span style="background: #1a2040"></span>
-              </div>
-              <em>Midnight</em>
-            </button>
-            <button class="tsw" data-theme="coral" onclick="setTheme('coral')">
-              <div class="tsw-colors">
-                <span style="background: #f5dcd4"></span
-                ><span style="background: #c05040"></span>
-              </div>
-              <em>Coral</em>
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- ══════════════ PAUSE MODAL ══════════════ -->
-    <div id="pause-overlay" class="modal-overlay hidden">
-      <div class="modal-card center-modal">
-        <div class="modal-icon">⏸</div>
-        <div class="modal-title">Paused</div>
-        <button class="btn-primary full" onclick="resumeGame()">
-          ▶ Resume
+    <!-- MAIN MENU -->
+    <div id="menu-main" class="menu-section">
+      <div class="menu-play-btns">
+        <button class="play-card" onclick="playClick();showPanel('panel-multiplayer')">
+          <div class="pc-icon">⚔</div>
+          <div class="pc-body"><div class="pc-title">Play Online</div><div class="pc-desc">Challenge a friend with a Room ID</div></div>
+          <div class="pc-arrow">›</div>
         </button>
-        <button
-          class="btn-ghost full"
-          onclick="
-            playClick();
-            openSettings();
-          "
-        >
-          ⚙ Settings
-        </button>
-        <button class="btn-danger full" onclick="goToMenu()">
-          ↩ Quit Game
+        <button class="play-card" onclick="playClick();showPanel('panel-computer')">
+          <div class="pc-icon">🤖</div>
+          <div class="pc-body"><div class="pc-title">vs Computer</div><div class="pc-desc">Battle the AI engine</div></div>
+          <div class="pc-arrow">›</div>
         </button>
       </div>
-    </div>
-
-    <!-- ══════════════ RESIGN CONFIRM ══════════════ -->
-    <div id="resign-overlay" class="modal-overlay hidden">
-      <div class="modal-card center-modal">
-        <div class="modal-icon">⚑</div>
-        <div class="modal-title">Resign?</div>
-        <p class="modal-sub">You will forfeit this game.</p>
-        <button class="btn-danger full" onclick="doResign()">
-          Yes, Resign
-        </button>
-        <button class="btn-ghost full" onclick="closeResign()">Cancel</button>
+      <div class="menu-utils">
+        <button class="util-btn" onclick="playClick();openSettings()">⚙ Settings</button>
+        <button class="util-btn" id="sound-btn" onclick="toggleSound()">🔊 Sound</button>
       </div>
     </div>
 
-    <!-- ══════════════ DRAW OFFER ══════════════ -->
-    <div id="draw-overlay" class="modal-overlay hidden">
-      <div class="modal-card center-modal">
-        <div class="modal-icon">½</div>
-        <div class="modal-title">Draw Offered</div>
-        <p class="modal-sub">Your opponent proposes a draw.</p>
-        <button class="btn-primary full" onclick="respondDraw(true)">
-          Accept Draw
-        </button>
-        <button class="btn-ghost full" onclick="respondDraw(false)">
-          Decline
-        </button>
+    <!-- MULTIPLAYER -->
+    <div id="panel-multiplayer" class="menu-section hidden">
+      <button class="back-link" onclick="playClick();showPanel('menu-main')">← Back</button>
+      <h2 class="panel-h2">Play Online</h2>
+      <div class="form-group">
+        <label class="form-label">Room ID</label>
+        <input type="text" id="room-input" class="form-input" placeholder="Enter room code…" maxlength="20"/>
       </div>
+      <div class="form-group">
+        <label class="form-label">Time Control</label>
+        <div class="time-pills" id="timer-select-mp">
+          <button class="time-pill active" data-time="0">∞</button>
+          <button class="time-pill" data-time="180">3 min</button>
+          <button class="time-pill" data-time="300">5 min</button>
+          <button class="time-pill" data-time="600">10 min</button>
+        </div>
+      </div>
+      <button class="btn-primary" onclick="playClick();joinRoom()">Join Game →</button>
+      <p class="form-hint">Share the same Room ID with your opponent</p>
     </div>
 
-    <!-- ══════════════ PROMOTION ══════════════ -->
-    <div id="promo-overlay" class="modal-overlay hidden">
-      <div class="modal-card center-modal">
-        <div class="modal-title">Promote Pawn</div>
-        <p class="modal-sub">Choose your piece</p>
-        <div class="promo-grid" id="promo-pieces"></div>
+    <!-- VS COMPUTER -->
+    <div id="panel-computer" class="menu-section hidden">
+      <button class="back-link" onclick="playClick();showPanel('menu-main')">← Back</button>
+      <h2 class="panel-h2">vs Computer</h2>
+      <div class="form-group">
+        <label class="form-label">Difficulty</label>
+        <div class="diff-row">
+          <button class="diff-pill active" data-diff="easy"   onclick="playClick();setDiff('easy')">🕯 Squire</button>
+          <button class="diff-pill"        data-diff="medium" onclick="playClick();setDiff('medium')">⚔ Knight</button>
+          <button class="diff-pill"        data-diff="hard"   onclick="playClick();setDiff('hard')">👑 King</button>
+        </div>
       </div>
+      <div class="form-group">
+        <label class="form-label">Time Control</label>
+        <div class="time-pills" id="timer-select-cpu">
+          <button class="time-pill active" data-time="0">∞</button>
+          <button class="time-pill" data-time="180">3 min</button>
+          <button class="time-pill" data-time="300">5 min</button>
+          <button class="time-pill" data-time="600">10 min</button>
+        </div>
+      </div>
+      <button class="btn-primary" onclick="playClick();joinComputer()">Start Game →</button>
     </div>
 
-    <script src="script.js"></script>
-  </body>
+  </div><!-- /menu-right -->
+</div>
+
+<!-- ══════════════ GAME ══════════════ -->
+<div id="screen-game" class="screen">
+  <div class="game-root">
+
+    <!-- LEFT SIDEBAR -->
+    <aside class="game-aside left-aside">
+      <div class="aside-top">
+        <div class="brand-sm">♟ Royal Chess</div>
+        <div class="mode-tag" id="mode-tag">vs Computer</div>
+      </div>
+
+      <!-- Opponent card -->
+      <div class="player-card" id="opponent-card">
+        <div class="pc-avatar" id="opp-avatar">♚</div>
+        <div class="pc-info">
+          <div class="pc-name" id="opp-name">Opponent</div>
+          <div class="pc-color" id="opp-color-label">Black</div>
+        </div>
+        <div class="pc-timer" id="opp-timer" style="display:none;">
+          <div class="pc-time" id="timer-opp-val">—</div>
+          <div class="pc-timebar"><div class="pc-timefill" id="timer-opp-bar"></div></div>
+        </div>
+      </div>
+
+      <div class="captured-row" id="captured-opp"></div>
+      <div id="status-banner" class="status-banner" style="display:none;"></div>
+      <div id="thinking-bar" class="thinking-bar" style="display:none;">
+        <div class="think-dots"><i></i><i></i><i></i></div>
+        <span>Engine thinking…</span>
+      </div>
+
+      <div class="aside-spacer"></div>
+
+      <div class="captured-row" id="captured-me"></div>
+
+      <!-- My card -->
+      <div class="player-card" id="my-card">
+        <div class="pc-avatar" id="my-avatar">♙</div>
+        <div class="pc-info">
+          <div class="pc-name">You</div>
+          <div class="pc-color" id="my-color-label">White</div>
+        </div>
+        <div class="pc-timer" id="my-timer" style="display:none;">
+          <div class="pc-time" id="timer-my-val">—</div>
+          <div class="pc-timebar"><div class="pc-timefill" id="timer-my-bar"></div></div>
+        </div>
+      </div>
+
+      <!-- Controls (desktop sidebar) -->
+      <div class="game-controls">
+        <button class="ctrl-btn" onclick="togglePause()" id="pause-btn" title="Pause">⏸</button>
+        <button class="ctrl-btn" onclick="playClick();openSettings()" title="Settings">⚙</button>
+        <button class="ctrl-btn resign" onclick="confirmResign()" id="resign-btn" title="Resign">⚑</button>
+        <button class="ctrl-btn draw"   onclick="offerDraw()"     id="draw-btn"   title="Draw">½</button>
+      </div>
+    </aside>
+
+    <!-- BOARD COLUMN -->
+    <main class="game-main">
+      <div class="turn-row" id="opp-turn-row">
+        <div class="turn-dot" id="opp-turn-dot"></div>
+        <span id="opp-turn-label">Waiting…</span>
+      </div>
+      <div class="board-frame">
+        <div class="coord-col" id="rank-labels"></div>
+        <div>
+          <div id="board"></div>
+          <div class="coord-row" id="file-labels"></div>
+        </div>
+      </div>
+      <div class="turn-row" id="my-turn-row">
+        <div class="turn-dot" id="my-turn-dot"></div>
+        <span id="my-turn-label">Your Turn</span>
+      </div>
+    </main>
+
+    <!-- MOBILE BOTTOM BAR (hidden on desktop, shown on mobile) -->
+    <div class="mobile-bottom-bar">
+      <button class="mob-ctrl-btn" onclick="togglePause()" id="pause-btn-mob">⏸<span>Pause</span></button>
+      <button class="mob-ctrl-btn" onclick="playClick();openSettings()">⚙<span>Settings</span></button>
+      <button class="mob-ctrl-btn resign" onclick="confirmResign()" id="resign-btn-mob">⚑<span>Resign</span></button>
+      <button class="mob-ctrl-btn draw"   onclick="offerDraw()"     id="draw-btn-mob">½<span>Draw</span></button>
+    </div>
+
+    <!-- RIGHT SIDEBAR -->
+    <aside class="game-aside right-aside">
+      <div class="aside-top">
+        <span class="aside-title">Moves</span>
+        <button class="live-btn hist-live" onclick="historyGoLive()">Live</button>
+      </div>
+      <div class="move-list" id="move-list"></div>
+      <div class="hist-nav">
+        <button class="hist-nav-btn" onclick="historyStep(-Infinity)">|◀</button>
+        <button class="hist-nav-btn" onclick="historyStep(-1)">◀</button>
+        <button class="hist-nav-btn" onclick="historyStep(1)">▶</button>
+        <button class="hist-nav-btn" onclick="historyStep(Infinity)">▶|</button>
+      </div>
+      <div class="aside-spacer"></div>
+      <div class="engine-info" id="engine-info" style="display:none;">
+        <div class="engine-label">Engine Strength</div>
+        <div class="engine-depth" id="engine-depth">—</div>
+      </div>
+    </aside>
+
+  </div>
+</div>
+
+<!-- ══════════════ RESULT ══════════════ -->
+<div id="screen-result" class="screen">
+  <div class="bg-canvas"></div>
+  <div class="vignette"></div>
+  <div class="result-card">
+    <div class="result-icon" id="result-icon">♔</div>
+    <div class="result-verdict" id="result-verdict">VICTORY</div>
+    <div class="result-sub"    id="result-subtitle">You delivered checkmate</div>
+    <div class="result-hr"></div>
+    <div class="result-stats">
+      <div class="rs"><div class="rs-val" id="stat-moves">—</div><div class="rs-key">Moves</div></div>
+      <div class="rs-div"></div>
+      <div class="rs"><div class="rs-val" id="stat-color">—</div><div class="rs-key">Your Side</div></div>
+    </div>
+    <div class="result-btns">
+      <button class="btn-primary" onclick="location.reload()">⚔ Play Again</button>
+      <button class="btn-ghost"   onclick="goToMenu()">↩ Main Menu</button>
+    </div>
+  </div>
+  <div id="result-particles"></div>
+</div>
+
+<!-- ══════════════ SETTINGS MODAL ══════════════ -->
+<div id="settings-overlay" class="modal-overlay hidden">
+  <div class="modal-card">
+    <div class="modal-head">
+      <span class="modal-title">Settings</span>
+      <button class="modal-x" onclick="closeSettings()">✕</button>
+    </div>
+    <div class="setting-row">
+      <div class="sr-left"><div class="sr-icon">🔊</div><div class="sr-body"><div class="sr-name">Sound Effects</div><div class="sr-desc">Game audio on/off</div></div></div>
+      <label class="toggle"><input type="checkbox" id="setting-sound" checked onchange="onSoundToggle(this)"/><span class="tgl-track"><span class="tgl-thumb"></span></span></label>
+    </div>
+    <div class="setting-row">
+      <div class="sr-left"><div class="sr-icon">✨</div><div class="sr-body"><div class="sr-name">Move Highlights</div><div class="sr-desc">Show last move</div></div></div>
+      <label class="toggle"><input type="checkbox" id="setting-hints" checked onchange="onHintsToggle(this)"/><span class="tgl-track"><span class="tgl-thumb"></span></span></label>
+    </div>
+    <div class="setting-row col">
+      <div class="sr-left"><div class="sr-icon">🎨</div><div class="sr-body"><div class="sr-name">Board Theme</div></div></div>
+      <div class="theme-swatches">
+        <button class="tsw active" data-theme="classic"  onclick="setTheme('classic')" ><div class="tsw-colors"><span style="background:#f0d9b5"></span><span style="background:#b58863"></span></div><em>Classic</em></button>
+        <button class="tsw"        data-theme="walnut"   onclick="setTheme('walnut')"  ><div class="tsw-colors"><span style="background:#e8c99a"></span><span style="background:#7a4a2e"></span></div><em>Walnut</em></button>
+        <button class="tsw"        data-theme="slate"    onclick="setTheme('slate')"   ><div class="tsw-colors"><span style="background:#cdd5e0"></span><span style="background:#4a6080"></span></div><em>Slate</em></button>
+        <button class="tsw"        data-theme="emerald"  onclick="setTheme('emerald')" ><div class="tsw-colors"><span style="background:#c8e8d4"></span><span style="background:#2e6644"></span></div><em>Emerald</em></button>
+        <button class="tsw"        data-theme="midnight" onclick="setTheme('midnight')"><div class="tsw-colors"><span style="background:#7880a0"></span><span style="background:#1a2040"></span></div><em>Midnight</em></button>
+        <button class="tsw"        data-theme="coral"    onclick="setTheme('coral')"   ><div class="tsw-colors"><span style="background:#f5dcd4"></span><span style="background:#c05040"></span></div><em>Coral</em></button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════ PAUSE MODAL ══════════════ -->
+<div id="pause-overlay" class="modal-overlay hidden">
+  <div class="modal-card center-modal">
+    <div class="modal-icon">⏸</div>
+    <div class="modal-title">Paused</div>
+    <button class="btn-primary full" onclick="resumeGame()">▶ Resume</button>
+    <button class="btn-ghost   full" onclick="playClick();openSettings()">⚙ Settings</button>
+    <button class="btn-danger  full" onclick="goToMenu()">↩ Quit Game</button>
+  </div>
+</div>
+
+<!-- ══════════════ RESIGN CONFIRM ══════════════ -->
+<div id="resign-overlay" class="modal-overlay hidden">
+  <div class="modal-card center-modal">
+    <div class="modal-icon">⚑</div>
+    <div class="modal-title">Resign?</div>
+    <p class="modal-sub">You will forfeit this game.</p>
+    <button class="btn-danger  full" onclick="doResign()">Yes, Resign</button>
+    <button class="btn-ghost   full" onclick="closeResign()">Cancel</button>
+  </div>
+</div>
+
+<!-- ══════════════ DRAW OFFER ══════════════ -->
+<div id="draw-overlay" class="modal-overlay hidden">
+  <div class="modal-card center-modal">
+    <div class="modal-icon">½</div>
+    <div class="modal-title">Draw Offered</div>
+    <p class="modal-sub">Your opponent proposes a draw.</p>
+    <button class="btn-primary full" onclick="respondDraw(true)">Accept Draw</button>
+    <button class="btn-ghost   full" onclick="respondDraw(false)">Decline</button>
+  </div>
+</div>
+
+<!-- ══════════════ PROMOTION ══════════════ -->
+<div id="promo-overlay" class="modal-overlay hidden">
+  <div class="modal-card center-modal">
+    <div class="modal-title">Promote Pawn</div>
+    <p class="modal-sub">Choose your piece</p>
+    <div class="promo-grid" id="promo-pieces"></div>
+  </div>
+</div>
+
+<script src="script.js"></script>
+</body>
 </html>
