@@ -376,15 +376,15 @@ function onSquareClick(row,col){
     if(isCapture)SFX.capture();else SFX.move();
     if(timerMaxSeconds>0)stopTimer();
 
-    // Animate the move locally immediately (optimistic UI)
-    const movingPiece=board[fromRow][fromCol];
-    const intermediate=board.map(r=>[...r]);
-    intermediate[fromRow][fromCol]=' ';
-    intermediate[row][col]=' ';
-    renderBoard(intermediate);
-    animatePieceMove(movingPiece, fromRow, fromCol, row, col, ()=>{
-      // Board will be corrected when server responds
-    });
+    // // Animate the move locally immediately (optimistic UI)
+    // const movingPiece=board[fromRow][fromCol];
+    // const intermediate=board.map(r=>[...r]);
+    // intermediate[fromRow][fromCol]=' ';
+    // intermediate[row][col]=' ';
+    // renderBoard(intermediate);
+    // animatePieceMove(movingPiece, fromRow, fromCol, row, col, ()=>{
+    //   // Board will be corrected when server responds
+    // });
 
     socket.emit('makeMove',{roomId,fromRow,fromCol,toRow:row,toCol:col});
     selected=null;
@@ -596,8 +596,7 @@ socket.on('boardUpdate',({board:bd,turn,winner,moveCount,lastMove:lm,isComputerM
   recordSnapshot(bd,lm,cs);
 
   if(!isViewingHistory){
-    // Show intermediate board (piece still at source, destination cleared)
-    // so the flyer animates over the correct background
+    // ✅ Animate ALL moves (both opponent and your own moves)
     if(lm && movedPiece && !winner){
       const intermediate = bd.map(r=>[...r]);
       // Put piece back at source for the background board
