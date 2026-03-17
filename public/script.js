@@ -298,12 +298,12 @@ function renderBoard(bd, overrideCheck){
    The flyer sits at position:fixed over the from-square at z:9999.
 ────────────────────────────────────────────────────────────── */
 
-let _animId = 0; // unique id per animation to avoid keyframe name collisions
+let _animId = 0;
 
 function animatePieceMove(piece, fromRow, fromCol, toRow, toCol, done) {
-  const boardEl = document.getElementById('board');
+  const boardEl  = document.getElementById('board');
   const boardRect = boardEl.getBoundingClientRect();
-  const sq = boardRect.width / 8;
+  const sqSize   = boardRect.width / 8;
 
   // Display coords (account for board flip)
   const dFromR = myColor === 'black' ? (7 - fromRow) : fromRow;
@@ -311,73 +311,54 @@ function animatePieceMove(piece, fromRow, fromCol, toRow, toCol, done) {
   const dToR   = myColor === 'black' ? (7 - toRow)   : toRow;
   const dToC   = myColor === 'black' ? (7 - toCol)   : toCol;
 
-  // Absolute pixel positions of each square's top-left
-  const fx = boardRect.left + dFromC * sq;
-  const fy = boardRect.top  + dFromR * sq;
-  const tx = boardRect.left + dToC   * sq;
-  const ty = boardRect.top  + dToR   * sq;
-
-  // How far to travel (used as the translate endpoint in @keyframes)
-  const dx = tx - fx;
-  const dy = ty - fy;
+  const fx = boardRect.left + dFromC * sqSize;
+  const fy = boardRect.top  + dFromR * sqSize;
+  const dx = (dToC - dFromC) * sqSize;
+  const dy = (dToR - dFromR) * sqSize;
 
   const isWhite = piece === piece.toUpperCase();
   const id = 'pm' + (++_animId);
-  const DURATION = 240; // ms
+  const DUR = 220;
 
-  // 1. Inject unique @keyframes into a <style> tag
+  // Keyframe: pure translate only — NO scale, NO filter changes
+  // Scale causes iOS to re-composite and replay the animation
   const styleEl = document.createElement('style');
-  styleEl.id = id + '-style';
-  styleEl.textContent = `
-    @keyframes ${id} {
-      0%   { transform: translate(0px, 0px)        scale(1.22); opacity:1; }
-      40%  { transform: translate(${dx*0.5}px, ${dy*0.5}px) scale(1.28); opacity:1; }
-      100% { transform: translate(${dx}px, ${dy}px) scale(1.18); opacity:1; }
-    }
-  `;
+  styleEl.textContent = `@keyframes ${id}{from{transform:translate(0,0)}to{transform:translate(${dx}px,${dy}px)}}`;
   document.head.appendChild(styleEl);
 
-  // 2. Build flyer — use color directly, NO filter (filter causes double-animation on iOS)
+  // Flyer — use SAME CSS classes as board pieces so colors match exactly
   const flyer = document.createElement('span');
+  flyer.className = 'piece ' + (isWhite ? 'white' : 'black');
   flyer.textContent = GLYPHS[piece] || piece;
-
-  // White pieces: white fill + dark stroke via text-shadow outline trick
-  // Black pieces: black fill + light outline
-  // NO filter property at all — that was causing the double-play on iOS
-  const pieceColor  = isWhite ? '#ffffff' : '#0d0d0d';
-  const strokeColor = isWhite ? '#0d0d1a' : 'rgba(210,190,150,0.95)';
-
-  flyer.style.cssText = `
-    position:fixed;
-    left:${fx}px; top:${fy}px;
-    width:${sq}px; height:${sq}px;
-    font-size:${sq * 0.74}px;
-    line-height:${sq}px;
-    text-align:center;
-    display:block;
-    pointer-events:none;
-    z-index:9999;
-    color:${pieceColor};
-    -webkit-text-stroke:1.5px ${strokeColor};
-    will-change:transform;
-    animation:${id} ${DURATION}ms cubic-bezier(0.25,0.1,0.25,1.0) forwards;
-  `;
+  flyer.style.cssText = [
+    'position:fixed',
+    `left:${fx}px`,
+    `top:${fy}px`,
+    `width:${sqSize}px`,
+    `height:${sqSize}px`,
+    `font-size:${sqSize * 0.74}px`,
+    `line-height:${sqSize}px`,
+    'text-align:center',
+    'pointer-events:none',
+    'z-index:9999',
+    'display:block',
+    `animation:${id} ${DUR}ms linear forwards`,
+  ].join(';');
 
   document.body.appendChild(flyer);
 
-  // 3. After animation completes, clean up and call done
   setTimeout(() => {
     flyer.remove();
     styleEl.remove();
     done();
-    // Flash landing square
-    document.querySelectorAll('#board .sq').forEach(sq => {
-      if (+sq.dataset.row === toRow && +sq.dataset.col === toCol) {
-        sq.classList.add('piece-landing');
-        setTimeout(() => sq.classList.remove('piece-landing'), 300);
+    // Flash the destination square
+    document.querySelectorAll('#board .sq').forEach(s => {
+      if (+s.dataset.row === toRow && +s.dataset.col === toCol) {
+        s.classList.add('piece-landing');
+        setTimeout(() => s.classList.remove('piece-landing'), 280);
       }
     });
-  }, DURATION + 30);
+  }, DUR + 40);
 }
 
 function onSquareClick(row,col){
