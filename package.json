@@ -6,7 +6,7 @@
   "description": "Real-time multiplayer chess game",
   "main": "server/index.js",
   "scripts": {
-    "start": "node server/index.js",
+    "start": "nodemon server/index.js",
     "dev": "nodemon server/index.js"
   },
   "dependencies": {

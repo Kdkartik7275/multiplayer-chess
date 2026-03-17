@@ -6,9 +6,7 @@
       name="viewport"
       content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
     />
-    <!-- Tells browser we handle our own dark/light — prevents forced color overrides on pieces -->
     <meta name="color-scheme" content="dark" />
-    <meta name="supported-color-schemes" content="dark" />
     <title>Royal Chess</title>
     <script src="/socket.io/socket.io.js"></script>
     <link rel="stylesheet" href="style.css" />
@@ -35,27 +33,18 @@
 
     <!-- ══════════════ MENU ══════════════ -->
     <div id="screen-menu" class="screen">
-      <!-- Left decorative panel -->
       <div class="menu-left">
         <div class="bg-canvas"></div>
         <div class="grid-overlay"></div>
         <div class="vignette"></div>
-        <!-- floating pieces injected by JS -->
         <div id="float-pieces"></div>
-        <!-- 3D board -->
-        <div class="menu-board-wrap">
-          <div id="deco-board"></div>
-        </div>
-        <!-- Quote overlay -->
+        <div class="menu-board-wrap"><div id="deco-board"></div></div>
         <div class="menu-left-content">
           <div class="menu-left-quote">"Chess is the art of analysis."</div>
           <div class="menu-left-attr">— Mikhail Botvinnik</div>
         </div>
       </div>
-
-      <!-- Right content panel -->
       <div class="menu-right">
-        <!-- Logo -->
         <div class="menu-logo">
           <div class="logo-icon"><span class="logo-piece">♟</span></div>
           <div>
@@ -63,8 +52,6 @@
             <div class="logo-text-sub">Real-time · Multiplayer · AI</div>
           </div>
         </div>
-
-        <!-- MAIN MENU -->
         <div id="menu-main" class="menu-section">
           <div class="menu-play-btns">
             <button
@@ -111,8 +98,6 @@
             </button>
           </div>
         </div>
-
-        <!-- MULTIPLAYER -->
         <div id="panel-multiplayer" class="menu-section hidden">
           <button
             class="back-link"
@@ -154,8 +139,6 @@
           </button>
           <p class="form-hint">Share the same Room ID with your opponent</p>
         </div>
-
-        <!-- VS COMPUTER -->
         <div id="panel-computer" class="menu-section hidden">
           <button
             class="back-link"
@@ -222,149 +205,204 @@
           </button>
         </div>
       </div>
-      <!-- /menu-right -->
     </div>
 
     <!-- ══════════════ GAME ══════════════ -->
     <div id="screen-game" class="screen">
       <div class="game-root">
-        <!-- LEFT SIDEBAR -->
-        <aside class="game-aside left-aside">
-          <div class="aside-top">
-            <div class="brand-sm">♟ Royal Chess</div>
-            <div class="mode-tag" id="mode-tag">vs Computer</div>
+        <!-- LEFT SIDEBAR — visible on desktop, hidden on mobile -->
+        <aside class="game-sidebar">
+          <div class="sb-head">
+            <div class="sb-brand">
+              <span class="sb-piece">♟</span>
+              <span class="sb-title">Royal Chess</span>
+            </div>
+            <span class="sb-mode" id="mode-tag">vs Computer</span>
           </div>
 
-          <!-- Opponent card -->
-          <div class="player-card" id="opponent-card">
-            <div class="pc-avatar" id="opp-avatar">♚</div>
-            <div class="pc-info">
-              <div class="pc-name" id="opp-name">Opponent</div>
-              <div class="pc-color" id="opp-color-label">Black</div>
+          <div class="sb-card" id="opponent-card">
+            <div class="sb-avatar" id="opp-avatar">♚</div>
+            <div class="sb-cinfo">
+              <div class="sb-cname" id="opp-name">AI Engine</div>
+              <div class="sb-ccolor" id="opp-color-label">Black Pieces</div>
             </div>
-            <div class="pc-timer" id="opp-timer" style="display: none">
-              <div class="pc-time" id="timer-opp-val">—</div>
-              <div class="pc-timebar">
-                <div class="pc-timefill" id="timer-opp-bar"></div>
+            <div class="sb-ctimer" id="opp-timer" style="display: none">
+              <div class="sb-ctime" id="timer-opp-val">—</div>
+              <div class="sb-ctimebar">
+                <div class="sb-ctimefill" id="timer-opp-bar"></div>
               </div>
             </div>
           </div>
 
-          <div class="captured-row" id="captured-opp"></div>
+          <div class="sb-captured" id="captured-opp"></div>
 
-          <div
-            id="status-banner"
-            class="status-banner"
-            style="display: none"
-          ></div>
-
-          <div id="thinking-bar" class="thinking-bar" style="display: none">
+          <div id="status-banner" class="sb-banner" style="display: none"></div>
+          <div id="thinking-bar" class="sb-thinking" style="display: none">
             <div class="think-dots"><i></i><i></i><i></i></div>
             <span>Engine thinking…</span>
           </div>
 
-          <div class="aside-spacer"></div>
+          <div class="sb-spacer"></div>
 
-          <div class="captured-row" id="captured-me"></div>
+          <div class="sb-captured" id="captured-me"></div>
 
-          <!-- My card -->
-          <div class="player-card" id="my-card">
-            <div class="pc-avatar" id="my-avatar">♙</div>
-            <div class="pc-info">
-              <div class="pc-name">You</div>
-              <div class="pc-color" id="my-color-label">White</div>
+          <div class="sb-card" id="my-card">
+            <div class="sb-avatar" id="my-avatar">♔</div>
+            <div class="sb-cinfo">
+              <div class="sb-cname">You</div>
+              <div class="sb-ccolor" id="my-color-label">White Pieces</div>
             </div>
-            <div class="pc-timer" id="my-timer" style="display: none">
-              <div class="pc-time" id="timer-my-val">—</div>
-              <div class="pc-timebar">
-                <div class="pc-timefill" id="timer-my-bar"></div>
+            <div class="sb-ctimer" id="my-timer" style="display: none">
+              <div class="sb-ctime" id="timer-my-val">—</div>
+              <div class="sb-ctimebar">
+                <div class="sb-ctimefill" id="timer-my-bar"></div>
               </div>
             </div>
           </div>
 
-          <!-- Controls -->
-          <div class="game-controls">
+          <div class="sb-controls">
             <button
-              class="ctrl-btn"
+              class="sb-btn"
               onclick="togglePause()"
               id="pause-btn"
               title="Pause"
             >
-              ⏸
+              ⏸<span>Pause</span>
             </button>
             <button
-              class="ctrl-btn"
+              class="sb-btn"
               onclick="
                 playClick();
                 openSettings();
               "
               title="Settings"
             >
-              ⚙
+              ⚙<span>Settings</span>
             </button>
             <button
-              class="ctrl-btn resign"
+              class="sb-btn danger"
               onclick="confirmResign()"
               id="resign-btn"
               title="Resign"
             >
-              ⚑
+              ⚑<span>Resign</span>
             </button>
             <button
-              class="ctrl-btn draw"
+              class="sb-btn info"
               onclick="offerDraw()"
               id="draw-btn"
-              title="Draw"
+              title="Offer Draw"
             >
-              ½
+              ½<span>Draw</span>
             </button>
           </div>
         </aside>
 
-        <!-- BOARD COLUMN -->
-        <main class="game-main">
-          <div class="turn-row" id="opp-turn-row">
-            <div class="turn-dot" id="opp-turn-dot"></div>
-            <span id="opp-turn-label">Waiting…</span>
+        <!-- CENTER — board + mobile chrome -->
+        <main class="game-center">
+          <!-- Mobile topbar -->
+          <div class="mob-bar">
+            <div class="mob-brand">
+              <span>♟</span>
+              <span>Royal Chess</span>
+              <span class="mob-mode" id="mode-tag-mobile">vs Computer</span>
+            </div>
+            <div class="mob-btns">
+              <button
+                class="mob-btn"
+                onclick="togglePause()"
+                id="pause-btn-mobile"
+              >
+                ⏸
+              </button>
+              <button
+                class="mob-btn"
+                onclick="
+                  playClick();
+                  openSettings();
+                "
+              >
+                ⚙
+              </button>
+              <button
+                class="mob-btn danger"
+                onclick="confirmResign()"
+                id="resign-btn-mobile"
+              >
+                ⚑
+              </button>
+              <button
+                class="mob-btn info"
+                onclick="offerDraw()"
+                id="draw-btn-mobile"
+              >
+                ½
+              </button>
+            </div>
           </div>
-          <div class="board-frame">
+
+          <!-- Mobile opponent -->
+          <div class="mob-player opp" id="opponent-row">
+            <div class="mob-dot" id="opp-dot-mobile"></div>
+            <div class="mob-av black-av" id="opp-avatar-mobile">♚</div>
+            <div class="mob-pdata">
+              <span class="mob-pname" id="opp-name-mobile">AI Engine</span>
+              <span class="mob-plabel" id="opp-label-mobile">Black Pieces</span>
+            </div>
+            <div class="mob-pright">
+              <span
+                class="mob-ptime"
+                id="timer-opp-val-mobile"
+                style="display: none"
+                >—</span
+              >
+              <div class="mob-caps" id="captured-opp-mobile"></div>
+            </div>
+          </div>
+
+          <!-- Mobile status -->
+          <div
+            id="status-banner-mobile"
+            class="mob-banner"
+            style="display: none"
+          ></div>
+          <div
+            id="thinking-bar-mobile"
+            class="mob-thinking"
+            style="display: none"
+          >
+            <div class="think-dots"><i></i><i></i><i></i></div>
+            <span>Engine thinking…</span>
+          </div>
+
+          <!-- ★ THE BOARD ★ -->
+          <div class="board-wrap">
             <div class="coord-col" id="rank-labels"></div>
-            <div>
+            <div class="board-col">
               <div id="board"></div>
               <div class="coord-row" id="file-labels"></div>
             </div>
           </div>
-          <div class="turn-row" id="my-turn-row">
-            <div class="turn-dot" id="my-turn-dot"></div>
-            <span id="my-turn-label">Your Turn</span>
+
+          <!-- Mobile you -->
+          <div class="mob-player me" id="my-row">
+            <div class="mob-dot" id="my-dot-mobile"></div>
+            <div class="mob-av white-av" id="my-avatar-mobile">♔</div>
+            <div class="mob-pdata">
+              <span class="mob-pname">You</span>
+              <span class="mob-plabel" id="my-label-mobile">White Pieces</span>
+            </div>
+            <div class="mob-pright">
+              <span
+                class="mob-ptime"
+                id="timer-my-val-mobile"
+                style="display: none"
+                >—</span
+              >
+              <div class="mob-caps" id="captured-me-mobile"></div>
+            </div>
           </div>
         </main>
-
-        <!-- RIGHT SIDEBAR -->
-        <aside class="game-aside right-aside">
-          <div class="aside-top">
-            <span class="aside-title">Moves</span>
-            <button class="live-btn hist-live" onclick="historyGoLive()">
-              Live
-            </button>
-          </div>
-          <div class="move-list" id="move-list"></div>
-          <div class="hist-nav">
-            <button class="hist-nav-btn" onclick="historyStep(-Infinity)">
-              |◀
-            </button>
-            <button class="hist-nav-btn" onclick="historyStep(-1)">◀</button>
-            <button class="hist-nav-btn" onclick="historyStep(1)">▶</button>
-            <button class="hist-nav-btn" onclick="historyStep(Infinity)">
-              ▶|
-            </button>
-          </div>
-          <div class="aside-spacer"></div>
-          <div class="engine-info" id="engine-info" style="display: none">
-            <div class="engine-label">Engine Strength</div>
-            <div class="engine-depth" id="engine-depth">—</div>
-          </div>
-        </aside>
       </div>
     </div>
 
@@ -400,7 +438,7 @@
       <div id="result-particles"></div>
     </div>
 
-    <!-- ══════════════ SETTINGS MODAL ══════════════ -->
+    <!-- ══════════════ SETTINGS ══════════════ -->
     <div id="settings-overlay" class="modal-overlay hidden">
       <div class="modal-card">
         <div class="modal-head">
@@ -510,7 +548,7 @@
       </div>
     </div>
 
-    <!-- ══════════════ PAUSE MODAL ══════════════ -->
+    <!-- ══════════════ PAUSE ══════════════ -->
     <div id="pause-overlay" class="modal-overlay hidden">
       <div class="modal-card center-modal">
         <div class="modal-icon">⏸</div>
@@ -533,7 +571,7 @@
       </div>
     </div>
 
-    <!-- ══════════════ RESIGN CONFIRM ══════════════ -->
+    <!-- ══════════════ RESIGN ══════════════ -->
     <div id="resign-overlay" class="modal-overlay hidden">
       <div class="modal-card center-modal">
         <div class="modal-icon">⚑</div>
@@ -546,7 +584,7 @@
       </div>
     </div>
 
-    <!-- ══════════════ DRAW OFFER ══════════════ -->
+    <!-- ══════════════ DRAW ══════════════ -->
     <div id="draw-overlay" class="modal-overlay hidden">
       <div class="modal-card center-modal">
         <div class="modal-icon">½</div>
