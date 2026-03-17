@@ -568,83 +568,6 @@ function renderBoard(bd, overrideCheck) {
   );
 }
 
-// ── ANIMATION ─────────────────────────────────────────
-// Root cause of double-animation on iOS:
-//   The old code used `filter: invert(1)` on white flyer + `scale()` in @keyframes.
-//   On iOS Safari, any element with `filter` gets its own compositor layer.
-//   When `scale` is in the keyframe, iOS creates TWO compositor passes, replaying it.
-//   Black pieces had no filter so they animated once correctly.
-//
-// Fix:
-//   1. NO `filter` on the flyer at all.
-//   2. NO `scale` in the @keyframes — pure translate only.
-//   3. Flyer uses direct `color` + `text-shadow` matching the CSS classes.
-//      This is the exact same technique used on the static board pieces.
-
-let _animId = 0;
-
-function animatePieceMove(piece, fromRow, fromCol, toRow, toCol, done) {
-  const boardEl = document.getElementById("board");
-  const boardRect = boardEl.getBoundingClientRect();
-  const sqSize = boardRect.width / 8;
-
-  const dFromR = myColor === "black" ? 7 - fromRow : fromRow;
-  const dFromC = myColor === "black" ? 7 - fromCol : fromCol;
-  const dToR = myColor === "black" ? 7 - toRow : toRow;
-  const dToC = myColor === "black" ? 7 - toCol : toCol;
-
-  const fx = boardRect.left + dFromC * sqSize;
-  const fy = boardRect.top + dFromR * sqSize;
-  const dx = (dToC - dFromC) * sqSize;
-  const dy = (dToR - dFromR) * sqSize;
-
-  const isWhite = piece === piece.toUpperCase();
-  const id = "pm" + ++_animId;
-  const DUR = 200; // ms
-
-  // Pure translate — NO scale, NO filter
-  const styleEl = document.createElement("style");
-  styleEl.textContent = `@keyframes ${id}{from{transform:translate(0,0)}to{transform:translate(${dx}px,${dy}px)}}`;
-  document.head.appendChild(styleEl);
-
-  const flyer = document.createElement("span");
-  flyer.textContent = GLYPHS[piece] || piece;
-
-  // Match exactly the same color technique as the board .piece CSS class:
-  // white → color:#fff + text-shadow dark outline
-  // black → color:#111 + text-shadow light outline
-  // NO filter property — that's what caused the double-animation
-  const whiteStyle =
-    "color:#ffffff;text-shadow:-1px -1px 0 #0d0d1a,1px -1px 0 #0d0d1a,-1px 1px 0 #0d0d1a,1px 1px 0 #0d0d1a,-1px 0 0 #0d0d1a,1px 0 0 #0d0d1a,0 -1px 0 #0d0d1a,0 1px 0 #0d0d1a;";
-  const blackStyle =
-    "color:#111111;text-shadow:-1px -1px 0 rgba(210,190,150,0.9),1px -1px 0 rgba(210,190,150,0.9),-1px 1px 0 rgba(210,190,150,0.9),1px 1px 0 rgba(210,190,150,0.9),-1px 0 0 rgba(210,190,150,0.9),1px 0 0 rgba(210,190,150,0.9),0 -1px 0 rgba(210,190,150,0.9),0 1px 0 rgba(210,190,150,0.9);";
-
-  flyer.style.cssText = `
-    position:fixed;
-    left:${fx}px;top:${fy}px;
-    width:${sqSize}px;height:${sqSize}px;
-    font-size:${sqSize * 0.74}px;line-height:${sqSize}px;
-    text-align:center;display:block;
-    pointer-events:none;z-index:9999;
-    ${isWhite ? whiteStyle : blackStyle}
-    animation:${id} ${DUR}ms ease-in-out forwards;
-  `;
-
-  document.body.appendChild(flyer);
-
-  setTimeout(() => {
-    flyer.remove();
-    styleEl.remove();
-    done();
-    document.querySelectorAll("#board .sq").forEach((s) => {
-      if (+s.dataset.row === toRow && +s.dataset.col === toCol) {
-        s.classList.add("piece-landing");
-        setTimeout(() => s.classList.remove("piece-landing"), 280);
-      }
-    });
-  }, DUR + 40);
-}
-
 // ── CLICK ─────────────────────────────────────────────
 function onSquareClick(row, col) {
   if (
@@ -667,12 +590,6 @@ function onSquareClick(row, col) {
     if (board[row][col] && board[row][col] !== " ") SFX.capture();
     else SFX.move();
     if (timerMaxSeconds > 0) stopTimer();
-    const movingPiece = board[fromRow][fromCol];
-    const intermediate = board.map((r) => [...r]);
-    intermediate[fromRow][fromCol] = " ";
-    intermediate[row][col] = " ";
-    renderBoard(intermediate);
-    animatePieceMove(movingPiece, fromRow, fromCol, row, col, () => {});
     socket.emit("makeMove", {
       roomId,
       fromRow,
@@ -1058,31 +975,10 @@ socket.on(
     }
     recordSnapshot(bd, lm, cs);
     if (!isViewingHistory) {
-      if (lm && movedPiece && !winner) {
-        const intermediate = bd.map((r) => [...r]);
-        intermediate[lm.fromRow][lm.fromCol] = movedPiece;
-        intermediate[lm.toRow][lm.toCol] = " ";
-        renderBoard(intermediate);
-        animatePieceMove(
-          movedPiece,
-          lm.fromRow,
-          lm.fromCol,
-          lm.toRow,
-          lm.toCol,
-          () => {
-            renderBoard(bd);
-            if (status === "check") {
-              showBanner("⚠ Check! Your king is under attack", "check");
-              SFX.check();
-            }
-          },
-        );
-      } else {
-        renderBoard(bd);
-        if (status === "check") {
-          showBanner("⚠ Check! Your king is under attack", "check");
-          SFX.check();
-        }
+      renderBoard(bd);
+      if (status === "check") {
+        showBanner("⚠ Check! Your king is under attack", "check");
+        SFX.check();
       }
     }
     updateTurnIndicators(turn, winner, status);

@@ -1575,21 +1575,6 @@ body {
   pointer-events: none;
 }
 
-/* Landing flash */
-.sq.piece-landing {
-  animation: landFlash 0.3s ease-out;
-}
-
-@keyframes landFlash {
-  0% {
-    filter: brightness(1.9);
-  }
-
-  100% {
-    filter: brightness(1);
-  }
-}
-
 .move-list {
   flex: 1;
   overflow-y: auto;
