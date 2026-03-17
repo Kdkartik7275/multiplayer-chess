@@ -6,7 +6,6 @@
       name="viewport"
       content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
     />
-    <!-- Tells browser we handle our own dark/light — prevents forced color overrides on pieces -->
     <meta name="color-scheme" content="dark" />
     <meta name="supported-color-schemes" content="dark" />
     <title>Royal Chess</title>
@@ -14,7 +13,6 @@
     <link rel="stylesheet" href="style.css" />
   </head>
   <body data-theme="classic">
-    <!-- ══════════════ LOADING ══════════════ -->
     <div id="screen-loading" class="screen active">
       <div class="bg-canvas"></div>
       <div class="grid-overlay"></div>
@@ -33,29 +31,19 @@
       </div>
     </div>
 
-    <!-- ══════════════ MENU ══════════════ -->
     <div id="screen-menu" class="screen">
-      <!-- Left decorative panel -->
       <div class="menu-left">
         <div class="bg-canvas"></div>
         <div class="grid-overlay"></div>
         <div class="vignette"></div>
-        <!-- floating pieces injected by JS -->
         <div id="float-pieces"></div>
-        <!-- 3D board -->
-        <div class="menu-board-wrap">
-          <div id="deco-board"></div>
-        </div>
-        <!-- Quote overlay -->
+        <div class="menu-board-wrap"><div id="deco-board"></div></div>
         <div class="menu-left-content">
           <div class="menu-left-quote">"Chess is the art of analysis."</div>
           <div class="menu-left-attr">— Mikhail Botvinnik</div>
         </div>
       </div>
-
-      <!-- Right content panel -->
       <div class="menu-right">
-        <!-- Logo -->
         <div class="menu-logo">
           <div class="logo-icon"><span class="logo-piece">♟</span></div>
           <div>
@@ -63,8 +51,6 @@
             <div class="logo-text-sub">Real-time · Multiplayer · AI</div>
           </div>
         </div>
-
-        <!-- MAIN MENU -->
         <div id="menu-main" class="menu-section">
           <div class="menu-play-btns">
             <button
@@ -111,8 +97,6 @@
             </button>
           </div>
         </div>
-
-        <!-- MULTIPLAYER -->
         <div id="panel-multiplayer" class="menu-section hidden">
           <button
             class="back-link"
@@ -154,8 +138,6 @@
           </button>
           <p class="form-hint">Share the same Room ID with your opponent</p>
         </div>
-
-        <!-- VS COMPUTER -->
         <div id="panel-computer" class="menu-section hidden">
           <button
             class="back-link"
@@ -222,20 +204,15 @@
           </button>
         </div>
       </div>
-      <!-- /menu-right -->
     </div>
 
-    <!-- ══════════════ GAME ══════════════ -->
     <div id="screen-game" class="screen">
       <div class="game-root">
-        <!-- LEFT SIDEBAR -->
         <aside class="game-aside left-aside">
           <div class="aside-top">
             <div class="brand-sm">♟ Royal Chess</div>
             <div class="mode-tag" id="mode-tag">vs Computer</div>
           </div>
-
-          <!-- Opponent card -->
           <div class="player-card" id="opponent-card">
             <div class="pc-avatar" id="opp-avatar">♚</div>
             <div class="pc-info">
@@ -249,25 +226,18 @@
               </div>
             </div>
           </div>
-
           <div class="captured-row" id="captured-opp"></div>
-
           <div
             id="status-banner"
             class="status-banner"
             style="display: none"
           ></div>
-
           <div id="thinking-bar" class="thinking-bar" style="display: none">
             <div class="think-dots"><i></i><i></i><i></i></div>
             <span>Engine thinking…</span>
           </div>
-
           <div class="aside-spacer"></div>
-
           <div class="captured-row" id="captured-me"></div>
-
-          <!-- My card -->
           <div class="player-card" id="my-card">
             <div class="pc-avatar" id="my-avatar">♙</div>
             <div class="pc-info">
@@ -281,8 +251,6 @@
               </div>
             </div>
           </div>
-
-          <!-- Controls -->
           <div class="game-controls">
             <button
               class="ctrl-btn"
@@ -320,8 +288,6 @@
             </button>
           </div>
         </aside>
-
-        <!-- BOARD COLUMN -->
         <main class="game-main">
           <div class="turn-row" id="opp-turn-row">
             <div class="turn-dot" id="opp-turn-dot"></div>
@@ -339,8 +305,6 @@
             <span id="my-turn-label">Your Turn</span>
           </div>
         </main>
-
-        <!-- RIGHT SIDEBAR -->
         <aside class="game-aside right-aside">
           <div class="aside-top">
             <span class="aside-title">Moves</span>
@@ -368,7 +332,6 @@
       </div>
     </div>
 
-    <!-- ══════════════ RESULT ══════════════ -->
     <div id="screen-result" class="screen">
       <div class="bg-canvas"></div>
       <div class="vignette"></div>
@@ -400,12 +363,11 @@
       <div id="result-particles"></div>
     </div>
 
-    <!-- ══════════════ SETTINGS MODAL ══════════════ -->
     <div id="settings-overlay" class="modal-overlay hidden">
       <div class="modal-card">
         <div class="modal-head">
-          <span class="modal-title">Settings</span>
-          <button class="modal-x" onclick="closeSettings()">✕</button>
+          <span class="modal-title">Settings</span
+          ><button class="modal-x" onclick="closeSettings()">✕</button>
         </div>
         <div class="setting-row">
           <div class="sr-left">
@@ -510,7 +472,6 @@
       </div>
     </div>
 
-    <!-- ══════════════ PAUSE MODAL ══════════════ -->
     <div id="pause-overlay" class="modal-overlay hidden">
       <div class="modal-card center-modal">
         <div class="modal-icon">⏸</div>
@@ -533,7 +494,6 @@
       </div>
     </div>
 
-    <!-- ══════════════ RESIGN CONFIRM ══════════════ -->
     <div id="resign-overlay" class="modal-overlay hidden">
       <div class="modal-card center-modal">
         <div class="modal-icon">⚑</div>
@@ -546,7 +506,6 @@
       </div>
     </div>
 
-    <!-- ══════════════ DRAW OFFER ══════════════ -->
     <div id="draw-overlay" class="modal-overlay hidden">
       <div class="modal-card center-modal">
         <div class="modal-icon">½</div>
@@ -561,7 +520,6 @@
       </div>
     </div>
 
-    <!-- ══════════════ PROMOTION ══════════════ -->
     <div id="promo-overlay" class="modal-overlay hidden">
       <div class="modal-card center-modal">
         <div class="modal-title">Promote Pawn</div>
