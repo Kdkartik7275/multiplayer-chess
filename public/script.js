@@ -594,16 +594,64 @@ function setupPlayerCards() {
   document.getElementById("opp-label-mobile").textContent=oppColor==="white"?"White Pieces":"Black Pieces";
   document.getElementById("opp-name-mobile").textContent=isVsComputer?"AI Engine":"Opponent";
 }
+// Piece material values for score display
+const PIECE_VAL = {P:1,p:1,N:3,n:3,B:3,b:3,R:5,r:5,Q:9,q:9,K:0,k:0};
+
+function _renderCaptured(containerId, pieces) {
+  const el = document.getElementById(containerId);
+  if (!el) return;
+  el.innerHTML = "";
+  if (!pieces.length) return;
+  // Sort: queens first, then rooks, bishops, knights, pawns
+  const order = {Q:0,q:0,R:1,r:1,B:2,b:2,N:3,n:3,P:4,p:4};
+  const sorted = [...pieces].sort((a,b)=>(order[a]??9)-(order[b]??9));
+  let score = 0;
+  sorted.forEach(p=>{
+    const span=document.createElement("span");
+    const isW=p===p.toUpperCase();
+    span.className="cap-piece "+(isW?"white-cap":"black-cap");
+    span.textContent=GLYPHS[p]||"";
+    span.title=p.toUpperCase();
+    el.appendChild(span);
+    score += PIECE_VAL[p]||0;
+  });
+  if (score > 0) {
+    const sc = document.createElement("span");
+    sc.className="cap-score";
+    sc.textContent="+"+score;
+    el.appendChild(sc);
+  }
+}
+
+// Captured piece buckets (keyed by container id)
+const _capBuckets = {
+  "captured-me":[], "captured-opp":[],
+  "captured-me-mobile":[], "captured-opp-mobile":[]
+};
+
 function addCapturedPiece(piece) {
-  const isW=piece===piece.toUpperCase(), byMe=(isW&&myColor==="black")||(!isW&&myColor==="white");
-  const span=document.createElement("span"); span.className="cap-piece "+(isW?"white-cap":"black-cap"); span.textContent=GLYPHS[piece]||"";
-  document.getElementById(byMe?"captured-me":"captured-opp").appendChild(span);
-  const spanM=document.createElement("span"); spanM.className="cap-piece "+(isW?"white-cap":"black-cap"); spanM.textContent=GLYPHS[piece]||"";
-  document.getElementById(byMe?"captured-me-mobile":"captured-opp-mobile").appendChild(spanM);
+  const isW=piece===piece.toUpperCase();
+  const byMe=(isW&&myColor==="black")||(!isW&&myColor==="white");
+  const meId=byMe?"captured-me":"captured-opp";
+  const meIdM=byMe?"captured-me-mobile":"captured-opp-mobile";
+  _capBuckets[meId].push(piece);
+  _capBuckets[meIdM].push(piece);
+  _renderCaptured(meId, _capBuckets[meId]);
+  _renderCaptured(meIdM, _capBuckets[meIdM]);
+}
+
+function resetCapturedPieces() {
+  Object.keys(_capBuckets).forEach(k=>{ _capBuckets[k]=[]; });
+  Object.keys(_capBuckets).forEach(k=>{ const el=document.getElementById(k); if(el) el.innerHTML=""; });
 }
 function updateGameActButtons() {
-  ["resign-btn","draw-btn","resign-btn-mobile","draw-btn-mobile"].forEach(id=>{const e=document.getElementById(id);if(e)e.disabled=gameOver;});
-  const d=gameOver||isVsComputer; ["draw-btn","draw-btn-mobile"].forEach(id=>{const e=document.getElementById(id);if(e)e.disabled=d;});
+  // Draw button: only visible in multiplayer, disabled when game over
+  ["draw-btn","draw-btn-mobile"].forEach(id=>{
+    const e=document.getElementById(id);
+    if(!e) return;
+    if(isVsComputer){ e.style.display="none"; }
+    else { e.style.display=""; e.disabled=gameOver; }
+  });
 }
 
 // ══════════════════════════════════════════════════════
@@ -638,6 +686,7 @@ socket.on("waiting",()=>setMode("Waiting…"));
 socket.on("gameStart",({board:bd,turn,vsComputer:cpu,timerSeconds:ts})=>{
   board=bd; currentTurn=turn; isVsComputer=!!cpu;
   clientGameState={castlingRights:{white:{kingSide:true,queenSide:true},black:{kingSide:true,queenSide:true}},enPassant:null};
+  resetCapturedPieces();
   setupPlayerCards(); renderBoard(bd); updateTurnIndicators(turn,null,null); updateActiveCard(turn); updateGameActButtons(); SFX.start();
   if(ts&&ts>0){timerSeconds=ts;initTimers(ts);startTimer();}
   if(isVsComputer&&(!ts||ts===0)&&turn===myColor) startThinkTimer();

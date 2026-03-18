@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,700&family=Inter:wght@300;400;500;600;700&family=Rajdhani:wght@500;600;700&display=swap');
+/* Fonts loaded via HTML <link> — Cinzel + Crimson Pro + Rajdhani */
 
 *,
 *::before,
@@ -48,7 +48,7 @@ html, body {
   overflow: hidden;
   background: var(--void);
   color: var(--t1);
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: 'Crimson Pro', Georgia, serif;
   font-size: 14px;
   -webkit-tap-highlight-color: transparent;
   touch-action: manipulation;
@@ -242,8 +242,8 @@ html, body {
   animation: fadeUp 1s .5s ease both;
 }
 .menu-left-quote {
-  font-family: 'Playfair Display', serif; font-style: italic;
-  font-size: 1.1rem; color: rgba(240,220,180,.7); line-height: 1.6; margin-bottom: 8px;
+  font-family: 'Crimson Pro', serif; font-style: italic;
+  font-size: 1.2rem; color: rgba(240,220,180,.7); line-height: 1.6; margin-bottom: 8px;
 }
 .menu-left-attr { font-size: .7rem; color: var(--t3); letter-spacing: .15em; text-transform: uppercase; }
 
@@ -279,8 +279,8 @@ html, body {
   position: relative; z-index: 1;
 }
 .logo-text-title {
-  font-family: 'Playfair Display', serif; font-size: 1.5rem; font-weight: 900;
-  letter-spacing: .06em;
+  font-family: 'Cinzel', serif; font-size: 1.4rem; font-weight: 700;
+  letter-spacing: .08em;
   background: linear-gradient(135deg, var(--gold2), var(--gold));
   -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
 }
@@ -338,11 +338,35 @@ html, body {
 .util-btn:hover { background: var(--hover); border-color: rgba(212,168,67,.3); color: var(--t1); }
 
 .back-link {
-  background: none; border: none; color: var(--t3); font-size: .8rem;
-  cursor: pointer; padding: 0; align-self: flex-start; transition: color .15s;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(212,168,67,.08);
+  border: 1px solid rgba(212,168,67,.22);
+  border-radius: 20px;
+  color: var(--gold);
+  font-family: 'Rajdhani', sans-serif;
+  font-size: .78rem;
+  font-weight: 600;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  cursor: pointer;
+  padding: 6px 14px 6px 10px;
+  align-self: flex-start;
+  transition: all .18s;
 }
-.back-link:hover { color: var(--gold); }
-.panel-h2 { font-family: 'Playfair Display', serif; font-size: 1.4rem; font-weight: 700; color: var(--t1); }
+.back-link:hover {
+  background: rgba(212,168,67,.16);
+  border-color: rgba(212,168,67,.5);
+  color: var(--gold2);
+  transform: translateX(-2px);
+}
+.back-arrow {
+  font-size: 1rem;
+  line-height: 1;
+  margin-top: -1px;
+}
+.panel-h2 { font-family: 'Cinzel', serif; font-size: 1.25rem; font-weight: 600; color: var(--t1); letter-spacing: .05em; }
 .form-group { display: flex; flex-direction: column; gap: 6px; }
 .form-label { font-size: .68rem; font-weight: 600; color: var(--t3); text-transform: uppercase; letter-spacing: .12em; }
 .form-input {
@@ -431,7 +455,7 @@ html, body {
   filter: drop-shadow(0 0 5px rgba(212,168,67,.5));
 }
 .sb-title {
-  font-family: 'Playfair Display', serif; font-size: .82rem; font-weight: 700;
+  font-family: 'Cinzel', serif; font-size: .78rem; font-weight: 600;
   background: linear-gradient(135deg, var(--gold2), var(--gold));
   -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
   letter-spacing: .04em;
@@ -474,10 +498,54 @@ html, body {
 @keyframes timeLow { 0%,100% { opacity: 1; } 50% { opacity: .4; } }
 .sb-ctimebar { width: 46px; height: 2px; background: rgba(255,255,255,.06); border-radius: 1px; overflow: hidden; }
 .sb-ctimefill { height: 100%; background: linear-gradient(90deg, var(--green2), var(--green)); transition: width 1s linear; }
-.sb-captured { min-height: 16px; display: flex; flex-wrap: wrap; gap: 1px; padding: 0 2px; font-size: .85rem; }
-.cap-piece { line-height: 1; }
-.cap-piece.white-cap { color: #fff; -webkit-text-stroke: 1px #333; opacity: .7; }
-.cap-piece.black-cap { color: #111; -webkit-text-stroke: 1px #aaa; opacity: .7; }
+.sb-captured {
+  min-height: 18px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1px;
+  padding: 1px 2px;
+}
+/* Each captured glyph — no tile box, pure typography */
+.cap-piece {
+  display: inline-block;
+  font-size: 1rem;
+  line-height: 1;
+}
+/* White pieces captured BY opponent — show as bright white glyphs */
+.cap-piece.white-cap {
+  color: #f0ece0;
+  filter:
+    drop-shadow(0  1px 0 rgba(0,0,0,.9))
+    drop-shadow(0 -1px 0 rgba(0,0,0,.9))
+    drop-shadow( 1px 0  0 rgba(0,0,0,.9))
+    drop-shadow(-1px 0  0 rgba(0,0,0,.9));
+}
+/* Black pieces captured BY opponent — show as warm amber/gold glyphs */
+.cap-piece.black-cap {
+  color: #c8a84b;
+  filter:
+    drop-shadow(0  1px 0 rgba(0,0,0,.8))
+    drop-shadow(0 -1px 0 rgba(0,0,0,.8))
+    drop-shadow( 1px 0  0 rgba(0,0,0,.8))
+    drop-shadow(-1px 0  0 rgba(0,0,0,.8));
+}
+/* Material advantage score badge */
+.cap-score {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Rajdhani', sans-serif;
+  font-size: .68rem;
+  font-weight: 700;
+  color: #0d0d1a;
+  background: var(--gold);
+  border-radius: 8px;
+  padding: 1px 5px;
+  margin-left: 3px;
+  letter-spacing: .02em;
+  min-width: 18px;
+}
 .sb-banner {
   padding: 8px 12px; border-radius: 8px; font-size: .74rem; font-weight: 600;
   text-align: center; animation: bannerSlide .3s ease; flex-shrink: 0;
@@ -506,8 +574,9 @@ html, body {
   40%          { transform: translateY(-5px); opacity: 1; }
 }
 .sb-spacer { flex: 1; min-height: 8px; }
-.sb-controls { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; flex-shrink: 0; }
+.sb-controls { display: flex; flex-direction: row; gap: 8px; flex-shrink: 0; }
 .sb-btn {
+  flex: 1;
   padding: 12px 8px;
   background: linear-gradient(135deg, var(--dark3), var(--card));
   border: 1px solid rgba(212,168,67,.12); border-radius: 10px; color: var(--t2);
@@ -932,10 +1001,22 @@ html, body {
   .mob-caps {
     display: flex;
     flex-wrap: wrap;
-    font-size: .65rem;
-    max-width: 60px;
-    line-height: 1;
-    gap: 0;
+    gap: 1px;
+    max-width: 72px;
+    align-items: center;
+  }
+  .mob-caps .cap-piece {
+    font-size: .82rem;
+    width: auto;
+    height: auto;
+    background: none;
+    border: none;
+    border-radius: 0;
+  }
+  .mob-caps .cap-score {
+    font-size: .62rem;
+    padding: 1px 4px;
+    min-width: 14px;
   }
   .mob-ptime {
     font-family: 'Rajdhani', sans-serif;
@@ -1072,7 +1153,7 @@ html, body {
   animation: iconFloat 3s ease-in-out infinite;
 }
 @keyframes iconFloat { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
-.result-verdict { font-family: 'Playfair Display', serif; font-weight: 900; font-size: 2.4rem; letter-spacing: .06em; margin-bottom: 8px; }
+.result-verdict { font-family: 'Cinzel', serif; font-weight: 900; font-size: 2.2rem; letter-spacing: .1em; margin-bottom: 8px; }
 .result-verdict.win  { color: var(--gold2); text-shadow: 0 0 40px rgba(212,168,67,.5); }
 .result-verdict.lose { color: var(--red);   text-shadow: 0 0 30px rgba(224,85,85,.4); }
 .result-verdict.draw { color: var(--t2); }
@@ -1113,7 +1194,7 @@ html, body {
   display: flex; flex-direction: column; align-items: center; gap: 10px;
 }
 .modal-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
-.modal-title { font-family: 'Playfair Display', serif; font-size: 1.2rem; font-weight: 700; color: var(--t1); }
+.modal-title { font-family: 'Cinzel', serif; font-size: 1.1rem; font-weight: 600; color: var(--t1); letter-spacing: .04em; }
 .modal-icon  { font-size: 2.8rem; margin-bottom: 4px; }
 .modal-sub   { font-size: .82rem; color: var(--t2); margin-bottom: 4px; }
 .modal-x {

@@ -2,16 +2,17 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta
-      name="viewport"
-      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
-    />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <meta name="color-scheme" content="dark" />
     <title>Royal Chess</title>
     <script src="/socket.io/socket.io.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css" />
   </head>
   <body data-theme="classic">
+
     <!-- ══════════════ LOADING ══════════════ -->
     <div id="screen-loading" class="screen active">
       <div class="bg-canvas"></div>
@@ -52,12 +53,10 @@
             <div class="logo-text-sub">Real-time · Multiplayer · AI</div>
           </div>
         </div>
+
         <div id="menu-main" class="menu-section">
           <div class="menu-play-btns">
-            <button
-              class="play-card"
-              onclick="playClick(); showPanel('panel-multiplayer');"
-            >
+            <button class="play-card" onclick="playClick(); showPanel('panel-multiplayer');">
               <div class="pc-icon">⚔</div>
               <div class="pc-body">
                 <div class="pc-title">Play Online</div>
@@ -65,10 +64,7 @@
               </div>
               <div class="pc-arrow">›</div>
             </button>
-            <button
-              class="play-card"
-              onclick="playClick(); showPanel('panel-computer');"
-            >
+            <button class="play-card" onclick="playClick(); showPanel('panel-computer');">
               <div class="pc-icon">🤖</div>
               <div class="pc-body">
                 <div class="pc-title">vs Computer</div>
@@ -78,28 +74,19 @@
             </button>
           </div>
           <div class="menu-utils">
-            <button class="util-btn" onclick="playClick(); openSettings();">
-              ⚙ Settings
-            </button>
-            <button class="util-btn" id="sound-btn" onclick="toggleSound()">
-              🔊 Sound
-            </button>
+            <button class="util-btn" onclick="playClick(); openSettings();">⚙ Settings</button>
+            <button class="util-btn" id="sound-btn" onclick="toggleSound()">🔊 Sound</button>
           </div>
         </div>
+
         <div id="panel-multiplayer" class="menu-section hidden">
           <button class="back-link" onclick="playClick(); showPanel('menu-main');">
-            ← Back
+            <span class="back-arrow">←</span> Back
           </button>
           <h2 class="panel-h2">Play Online</h2>
           <div class="form-group">
             <label class="form-label">Room ID</label>
-            <input
-              type="text"
-              id="room-input"
-              class="form-input"
-              placeholder="Enter room code…"
-              maxlength="20"
-            />
+            <input type="text" id="room-input" class="form-input" placeholder="Enter room code…" maxlength="20" />
           </div>
           <div class="form-group">
             <label class="form-label">Time Control</label>
@@ -110,28 +97,21 @@
               <button class="time-pill" data-time="600">10 min</button>
             </div>
           </div>
-          <button class="btn-primary" onclick="playClick(); joinRoom();">
-            Join Game →
-          </button>
+          <button class="btn-primary" onclick="playClick(); joinRoom();">Join Game →</button>
           <p class="form-hint">Share the same Room ID with your opponent</p>
         </div>
+
         <div id="panel-computer" class="menu-section hidden">
           <button class="back-link" onclick="playClick(); showPanel('menu-main');">
-            ← Back
+            <span class="back-arrow">←</span> Back
           </button>
           <h2 class="panel-h2">vs Computer</h2>
           <div class="form-group">
             <label class="form-label">Difficulty</label>
             <div class="diff-row">
-              <button class="diff-pill active" data-diff="easy" onclick="playClick(); setDiff('easy');">
-                🕯 Squire
-              </button>
-              <button class="diff-pill" data-diff="medium" onclick="playClick(); setDiff('medium');">
-                ⚔ Knight
-              </button>
-              <button class="diff-pill" data-diff="hard" onclick="playClick(); setDiff('hard');">
-                👑 King
-              </button>
+              <button class="diff-pill active" data-diff="easy" onclick="playClick(); setDiff('easy');">🕯 Squire</button>
+              <button class="diff-pill" data-diff="medium" onclick="playClick(); setDiff('medium');">⚔ Knight</button>
+              <button class="diff-pill" data-diff="hard" onclick="playClick(); setDiff('hard');">👑 King</button>
             </div>
           </div>
           <div class="form-group">
@@ -143,9 +123,7 @@
               <button class="time-pill" data-time="600">10 min</button>
             </div>
           </div>
-          <button class="btn-primary" onclick="playClick(); joinComputer();">
-            Start Game →
-          </button>
+          <button class="btn-primary" onclick="playClick(); joinComputer();">Start Game →</button>
         </div>
       </div>
     </div>
@@ -153,6 +131,7 @@
     <!-- ══════════════ GAME ══════════════ -->
     <div id="screen-game" class="screen">
       <div class="game-root">
+
         <!-- LEFT SIDEBAR -->
         <aside class="game-sidebar">
           <div class="sb-head">
@@ -169,18 +148,16 @@
               <div class="sb-cname" id="opp-name">AI Engine</div>
               <div class="sb-ccolor" id="opp-color-label">Black Pieces</div>
             </div>
-            <div class="sb-ctimer" id="opp-timer" style="display: none">
+            <div class="sb-ctimer" id="opp-timer" style="display:none">
               <div class="sb-ctime" id="timer-opp-val">—</div>
-              <div class="sb-ctimebar">
-                <div class="sb-ctimefill" id="timer-opp-bar"></div>
-              </div>
+              <div class="sb-ctimebar"><div class="sb-ctimefill" id="timer-opp-bar"></div></div>
             </div>
           </div>
 
           <div class="sb-captured" id="captured-opp"></div>
 
-          <div id="status-banner" class="sb-banner" style="display: none"></div>
-          <div id="thinking-bar" class="sb-thinking" style="display: none">
+          <div id="status-banner" class="sb-banner" style="display:none"></div>
+          <div id="thinking-bar" class="sb-thinking" style="display:none">
             <div class="think-dots"><i></i><i></i><i></i></div>
             <span>Engine thinking…</span>
           </div>
@@ -195,14 +172,13 @@
               <div class="sb-cname">You</div>
               <div class="sb-ccolor" id="my-color-label">White Pieces</div>
             </div>
-            <div class="sb-ctimer" id="my-timer" style="display: none">
+            <div class="sb-ctimer" id="my-timer" style="display:none">
               <div class="sb-ctime" id="timer-my-val">—</div>
-              <div class="sb-ctimebar">
-                <div class="sb-ctimefill" id="timer-my-bar"></div>
-              </div>
+              <div class="sb-ctimebar"><div class="sb-ctimefill" id="timer-my-bar"></div></div>
             </div>
           </div>
 
+          <!-- Sidebar controls: Pause + Settings only. Draw shown only in multiplayer via JS -->
           <div class="sb-controls">
             <button class="sb-btn" onclick="togglePause()" id="pause-btn" title="Pause">
               ⏸<span>Pause</span>
@@ -210,16 +186,13 @@
             <button class="sb-btn" onclick="playClick(); openSettings();" title="Settings">
               ⚙<span>Settings</span>
             </button>
-            <button class="sb-btn danger" onclick="confirmResign()" id="resign-btn" title="Resign">
-              ⚑<span>Resign</span>
-            </button>
-            <button class="sb-btn info" onclick="offerDraw()" id="draw-btn" title="Offer Draw">
+            <button class="sb-btn info" onclick="offerDraw()" id="draw-btn" title="Offer Draw" style="display:none">
               ½<span>Draw</span>
             </button>
           </div>
         </aside>
 
-        <!-- CENTER — board + mobile chrome -->
+        <!-- CENTER -->
         <main class="game-center">
           <!-- Mobile topbar -->
           <div class="mob-bar">
@@ -231,8 +204,7 @@
             <div class="mob-btns">
               <button class="mob-btn" onclick="togglePause()" id="pause-btn-mobile">⏸</button>
               <button class="mob-btn" onclick="playClick(); openSettings();">⚙</button>
-              <button class="mob-btn danger" onclick="confirmResign()" id="resign-btn-mobile">⚑</button>
-              <button class="mob-btn info" onclick="offerDraw()" id="draw-btn-mobile">½</button>
+              <button class="mob-btn info" onclick="offerDraw()" id="draw-btn-mobile" style="display:none">½</button>
             </div>
           </div>
 
@@ -245,19 +217,19 @@
               <span class="mob-plabel" id="opp-label-mobile">Black Pieces</span>
             </div>
             <div class="mob-pright">
-              <span class="mob-ptime" id="timer-opp-val-mobile" style="display: none">—</span>
+              <span class="mob-ptime" id="timer-opp-val-mobile" style="display:none">—</span>
               <div class="mob-caps" id="captured-opp-mobile"></div>
             </div>
           </div>
 
           <!-- Mobile status -->
-          <div id="status-banner-mobile" class="mob-banner" style="display: none"></div>
-          <div id="thinking-bar-mobile" class="mob-thinking" style="display: none">
+          <div id="status-banner-mobile" class="mob-banner" style="display:none"></div>
+          <div id="thinking-bar-mobile" class="mob-thinking" style="display:none">
             <div class="think-dots"><i></i><i></i><i></i></div>
             <span>Engine thinking…</span>
           </div>
 
-          <!-- ★ THE BOARD ★ -->
+          <!-- THE BOARD -->
           <div class="board-wrap">
             <div class="board-col">
               <div id="board"></div>
@@ -274,7 +246,7 @@
               <span class="mob-plabel" id="my-label-mobile">White Pieces</span>
             </div>
             <div class="mob-pright">
-              <span class="mob-ptime" id="timer-my-val-mobile" style="display: none">—</span>
+              <span class="mob-ptime" id="timer-my-val-mobile" style="display:none">—</span>
               <div class="mob-caps" id="captured-me-mobile"></div>
             </div>
           </div>
@@ -292,15 +264,9 @@
         <div class="result-sub" id="result-subtitle">You delivered checkmate</div>
         <div class="result-hr"></div>
         <div class="result-stats">
-          <div class="rs">
-            <div class="rs-val" id="stat-moves">—</div>
-            <div class="rs-key">Moves</div>
-          </div>
+          <div class="rs"><div class="rs-val" id="stat-moves">—</div><div class="rs-key">Moves</div></div>
           <div class="rs-div"></div>
-          <div class="rs">
-            <div class="rs-val" id="stat-color">—</div>
-            <div class="rs-key">Your Side</div>
-          </div>
+          <div class="rs"><div class="rs-val" id="stat-color">—</div><div class="rs-key">Your Side</div></div>
         </div>
         <div class="result-btns">
           <button class="btn-primary" onclick="location.reload()">⚔ Play Again</button>
@@ -317,80 +283,39 @@
           <span class="modal-title">Settings</span>
           <button class="modal-x" onclick="closeSettings()">✕</button>
         </div>
-
-        <!-- Sound Effects -->
         <div class="setting-row">
           <div class="sr-left">
             <div class="sr-icon">🔊</div>
-            <div class="sr-body">
-              <div class="sr-name">Sound Effects</div>
-              <div class="sr-desc">Game audio on/off</div>
-            </div>
+            <div class="sr-body"><div class="sr-name">Sound Effects</div><div class="sr-desc">Game audio on/off</div></div>
           </div>
-          <label class="toggle"
-            ><input type="checkbox" id="setting-sound" checked onchange="onSoundToggle(this)" /><span class="tgl-track"><span class="tgl-thumb"></span></span
-          ></label>
+          <label class="toggle"><input type="checkbox" id="setting-sound" checked onchange="onSoundToggle(this)" /><span class="tgl-track"><span class="tgl-thumb"></span></span></label>
         </div>
-
-        <!-- Move Highlights -->
         <div class="setting-row">
           <div class="sr-left">
             <div class="sr-icon">✨</div>
-            <div class="sr-body">
-              <div class="sr-name">Move Highlights</div>
-              <div class="sr-desc">Show last move</div>
-            </div>
+            <div class="sr-body"><div class="sr-name">Move Highlights</div><div class="sr-desc">Show last move</div></div>
           </div>
-          <label class="toggle"
-            ><input type="checkbox" id="setting-hints" checked onchange="onHintsToggle(this)" /><span class="tgl-track"><span class="tgl-thumb"></span></span
-          ></label>
+          <label class="toggle"><input type="checkbox" id="setting-hints" checked onchange="onHintsToggle(this)" /><span class="tgl-track"><span class="tgl-thumb"></span></span></label>
         </div>
-
-        <!-- Move Hints (NEW) -->
         <div class="setting-row">
           <div class="sr-left">
             <div class="sr-icon">🎯</div>
-            <div class="sr-body">
-              <div class="sr-name">Move Hints</div>
-              <div class="sr-desc">Show legal moves on select</div>
-            </div>
+            <div class="sr-body"><div class="sr-name">Move Hints</div><div class="sr-desc">Show legal moves on select</div></div>
           </div>
-          <label class="toggle"
-            ><input type="checkbox" id="setting-move-hints" checked onchange="onMoveHintsToggle(this)" /><span class="tgl-track"><span class="tgl-thumb"></span></span
-          ></label>
+          <label class="toggle"><input type="checkbox" id="setting-move-hints" checked onchange="onMoveHintsToggle(this)" /><span class="tgl-track"><span class="tgl-thumb"></span></span></label>
         </div>
-
-        <!-- Board Theme -->
         <div class="setting-row col">
           <div class="sr-left">
             <div class="sr-icon">🎨</div>
             <div class="sr-body"><div class="sr-name">Board Theme</div></div>
           </div>
           <div class="theme-swatches">
-            <button class="tsw active" data-theme="classic" onclick="setTheme('classic')">
-              <div class="tsw-colors"><span style="background:#f0d9b5"></span><span style="background:#b58863"></span></div>
-              <em>Classic</em>
-            </button>
-            <button class="tsw" data-theme="walnut" onclick="setTheme('walnut')">
-              <div class="tsw-colors"><span style="background:#e8c99a"></span><span style="background:#7a4a2e"></span></div>
-              <em>Walnut</em>
-            </button>
-            <button class="tsw" data-theme="slate" onclick="setTheme('slate')">
-              <div class="tsw-colors"><span style="background:#cdd5e0"></span><span style="background:#4a6080"></span></div>
-              <em>Slate</em>
-            </button>
-            <button class="tsw" data-theme="emerald" onclick="setTheme('emerald')">
-              <div class="tsw-colors"><span style="background:#c8e8d4"></span><span style="background:#2e6644"></span></div>
-              <em>Emerald</em>
-            </button>
-            <button class="tsw" data-theme="midnight" onclick="setTheme('midnight')">
-              <div class="tsw-colors"><span style="background:#7880a0"></span><span style="background:#1a2040"></span></div>
-              <em>Midnight</em>
-            </button>
-            <button class="tsw" data-theme="coral" onclick="setTheme('coral')">
-              <div class="tsw-colors"><span style="background:#f5dcd4"></span><span style="background:#c05040"></span></div>
-              <em>Coral</em>
-            </button>
+            <button class="tsw active" data-theme="classic" onclick="setTheme('classic')"><div class="tsw-colors"><span style="background:#f0d9b5"></span><span style="background:#b58863"></span></div><em>Classic</em></button>
+            <button class="tsw" data-theme="walnut" onclick="setTheme('walnut')"><div class="tsw-colors"><span style="background:#e8c99a"></span><span style="background:#7a4a2e"></span></div><em>Walnut</em></button>
+            <button class="tsw" data-theme="slate" onclick="setTheme('slate')"><div class="tsw-colors"><span style="background:#cdd5e0"></span><span style="background:#4a6080"></span></div><em>Slate</em></button>
+            <button class="tsw" data-theme="emerald" onclick="setTheme('emerald')"><div class="tsw-colors"><span style="background:#c8e8d4"></span><span style="background:#2e6644"></span></div><em>Emerald</em></button>
+            <button class="tsw" data-theme="midnight" onclick="setTheme('midnight')"><div class="tsw-colors"><span style="background:#7880a0"></span><span style="background:#1a2040"></span></div><em>Midnight</em></button>
+            <button class="tsw" data-theme="coral" onclick="setTheme('coral')"><div class="tsw-colors"><span style="background:#f5dcd4"></span><span style="background:#c05040"></span></div><em>Coral</em></button>
           </div>
         </div>
       </div>
@@ -404,17 +329,6 @@
         <button class="btn-primary full" onclick="resumeGame()">▶ Resume</button>
         <button class="btn-ghost full" onclick="playClick(); openSettings();">⚙ Settings</button>
         <button class="btn-danger full" onclick="goToMenu()">↩ Quit Game</button>
-      </div>
-    </div>
-
-    <!-- ══════════════ RESIGN ══════════════ -->
-    <div id="resign-overlay" class="modal-overlay hidden">
-      <div class="modal-card center-modal">
-        <div class="modal-icon">⚑</div>
-        <div class="modal-title">Resign?</div>
-        <p class="modal-sub">You will forfeit this game.</p>
-        <button class="btn-danger full" onclick="doResign()">Yes, Resign</button>
-        <button class="btn-ghost full" onclick="closeResign()">Cancel</button>
       </div>
     </div>
 
