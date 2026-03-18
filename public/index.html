@@ -56,10 +56,7 @@
           <div class="menu-play-btns">
             <button
               class="play-card"
-              onclick="
-                playClick();
-                showPanel('panel-multiplayer');
-              "
+              onclick="playClick(); showPanel('panel-multiplayer');"
             >
               <div class="pc-icon">⚔</div>
               <div class="pc-body">
@@ -70,10 +67,7 @@
             </button>
             <button
               class="play-card"
-              onclick="
-                playClick();
-                showPanel('panel-computer');
-              "
+              onclick="playClick(); showPanel('panel-computer');"
             >
               <div class="pc-icon">🤖</div>
               <div class="pc-body">
@@ -84,13 +78,7 @@
             </button>
           </div>
           <div class="menu-utils">
-            <button
-              class="util-btn"
-              onclick="
-                playClick();
-                openSettings();
-              "
-            >
+            <button class="util-btn" onclick="playClick(); openSettings();">
               ⚙ Settings
             </button>
             <button class="util-btn" id="sound-btn" onclick="toggleSound()">
@@ -99,13 +87,7 @@
           </div>
         </div>
         <div id="panel-multiplayer" class="menu-section hidden">
-          <button
-            class="back-link"
-            onclick="
-              playClick();
-              showPanel('menu-main');
-            "
-          >
+          <button class="back-link" onclick="playClick(); showPanel('menu-main');">
             ← Back
           </button>
           <h2 class="panel-h2">Play Online</h2>
@@ -128,59 +110,26 @@
               <button class="time-pill" data-time="600">10 min</button>
             </div>
           </div>
-          <button
-            class="btn-primary"
-            onclick="
-              playClick();
-              joinRoom();
-            "
-          >
+          <button class="btn-primary" onclick="playClick(); joinRoom();">
             Join Game →
           </button>
           <p class="form-hint">Share the same Room ID with your opponent</p>
         </div>
         <div id="panel-computer" class="menu-section hidden">
-          <button
-            class="back-link"
-            onclick="
-              playClick();
-              showPanel('menu-main');
-            "
-          >
+          <button class="back-link" onclick="playClick(); showPanel('menu-main');">
             ← Back
           </button>
           <h2 class="panel-h2">vs Computer</h2>
           <div class="form-group">
             <label class="form-label">Difficulty</label>
             <div class="diff-row">
-              <button
-                class="diff-pill active"
-                data-diff="easy"
-                onclick="
-                  playClick();
-                  setDiff('easy');
-                "
-              >
+              <button class="diff-pill active" data-diff="easy" onclick="playClick(); setDiff('easy');">
                 🕯 Squire
               </button>
-              <button
-                class="diff-pill"
-                data-diff="medium"
-                onclick="
-                  playClick();
-                  setDiff('medium');
-                "
-              >
+              <button class="diff-pill" data-diff="medium" onclick="playClick(); setDiff('medium');">
                 ⚔ Knight
               </button>
-              <button
-                class="diff-pill"
-                data-diff="hard"
-                onclick="
-                  playClick();
-                  setDiff('hard');
-                "
-              >
+              <button class="diff-pill" data-diff="hard" onclick="playClick(); setDiff('hard');">
                 👑 King
               </button>
             </div>
@@ -194,13 +143,7 @@
               <button class="time-pill" data-time="600">10 min</button>
             </div>
           </div>
-          <button
-            class="btn-primary"
-            onclick="
-              playClick();
-              joinComputer();
-            "
-          >
+          <button class="btn-primary" onclick="playClick(); joinComputer();">
             Start Game →
           </button>
         </div>
@@ -210,7 +153,7 @@
     <!-- ══════════════ GAME ══════════════ -->
     <div id="screen-game" class="screen">
       <div class="game-root">
-        <!-- LEFT SIDEBAR — visible on desktop, hidden on mobile -->
+        <!-- LEFT SIDEBAR -->
         <aside class="game-sidebar">
           <div class="sb-head">
             <div class="sb-brand">
@@ -261,38 +204,16 @@
           </div>
 
           <div class="sb-controls">
-            <button
-              class="sb-btn"
-              onclick="togglePause()"
-              id="pause-btn"
-              title="Pause"
-            >
+            <button class="sb-btn" onclick="togglePause()" id="pause-btn" title="Pause">
               ⏸<span>Pause</span>
             </button>
-            <button
-              class="sb-btn"
-              onclick="
-                playClick();
-                openSettings();
-              "
-              title="Settings"
-            >
+            <button class="sb-btn" onclick="playClick(); openSettings();" title="Settings">
               ⚙<span>Settings</span>
             </button>
-            <button
-              class="sb-btn danger"
-              onclick="confirmResign()"
-              id="resign-btn"
-              title="Resign"
-            >
+            <button class="sb-btn danger" onclick="confirmResign()" id="resign-btn" title="Resign">
               ⚑<span>Resign</span>
             </button>
-            <button
-              class="sb-btn info"
-              onclick="offerDraw()"
-              id="draw-btn"
-              title="Offer Draw"
-            >
+            <button class="sb-btn info" onclick="offerDraw()" id="draw-btn" title="Offer Draw">
               ½<span>Draw</span>
             </button>
           </div>
@@ -308,36 +229,10 @@
               <span class="mob-mode" id="mode-tag-mobile">vs Computer</span>
             </div>
             <div class="mob-btns">
-              <button
-                class="mob-btn"
-                onclick="togglePause()"
-                id="pause-btn-mobile"
-              >
-                ⏸
-              </button>
-              <button
-                class="mob-btn"
-                onclick="
-                  playClick();
-                  openSettings();
-                "
-              >
-                ⚙
-              </button>
-              <button
-                class="mob-btn danger"
-                onclick="confirmResign()"
-                id="resign-btn-mobile"
-              >
-                ⚑
-              </button>
-              <button
-                class="mob-btn info"
-                onclick="offerDraw()"
-                id="draw-btn-mobile"
-              >
-                ½
-              </button>
+              <button class="mob-btn" onclick="togglePause()" id="pause-btn-mobile">⏸</button>
+              <button class="mob-btn" onclick="playClick(); openSettings();">⚙</button>
+              <button class="mob-btn danger" onclick="confirmResign()" id="resign-btn-mobile">⚑</button>
+              <button class="mob-btn info" onclick="offerDraw()" id="draw-btn-mobile">½</button>
             </div>
           </div>
 
@@ -350,27 +245,14 @@
               <span class="mob-plabel" id="opp-label-mobile">Black Pieces</span>
             </div>
             <div class="mob-pright">
-              <span
-                class="mob-ptime"
-                id="timer-opp-val-mobile"
-                style="display: none"
-                >—</span
-              >
+              <span class="mob-ptime" id="timer-opp-val-mobile" style="display: none">—</span>
               <div class="mob-caps" id="captured-opp-mobile"></div>
             </div>
           </div>
 
           <!-- Mobile status -->
-          <div
-            id="status-banner-mobile"
-            class="mob-banner"
-            style="display: none"
-          ></div>
-          <div
-            id="thinking-bar-mobile"
-            class="mob-thinking"
-            style="display: none"
-          >
+          <div id="status-banner-mobile" class="mob-banner" style="display: none"></div>
+          <div id="thinking-bar-mobile" class="mob-thinking" style="display: none">
             <div class="think-dots"><i></i><i></i><i></i></div>
             <span>Engine thinking…</span>
           </div>
@@ -392,12 +274,7 @@
               <span class="mob-plabel" id="my-label-mobile">White Pieces</span>
             </div>
             <div class="mob-pright">
-              <span
-                class="mob-ptime"
-                id="timer-my-val-mobile"
-                style="display: none"
-                >—</span
-              >
+              <span class="mob-ptime" id="timer-my-val-mobile" style="display: none">—</span>
               <div class="mob-caps" id="captured-me-mobile"></div>
             </div>
           </div>
@@ -412,9 +289,7 @@
       <div class="result-card">
         <div class="result-icon" id="result-icon">♔</div>
         <div class="result-verdict" id="result-verdict">VICTORY</div>
-        <div class="result-sub" id="result-subtitle">
-          You delivered checkmate
-        </div>
+        <div class="result-sub" id="result-subtitle">You delivered checkmate</div>
         <div class="result-hr"></div>
         <div class="result-stats">
           <div class="rs">
@@ -428,9 +303,7 @@
           </div>
         </div>
         <div class="result-btns">
-          <button class="btn-primary" onclick="location.reload()">
-            ⚔ Play Again
-          </button>
+          <button class="btn-primary" onclick="location.reload()">⚔ Play Again</button>
           <button class="btn-ghost" onclick="goToMenu()">↩ Main Menu</button>
         </div>
       </div>
@@ -444,6 +317,8 @@
           <span class="modal-title">Settings</span>
           <button class="modal-x" onclick="closeSettings()">✕</button>
         </div>
+
+        <!-- Sound Effects -->
         <div class="setting-row">
           <div class="sr-left">
             <div class="sr-icon">🔊</div>
@@ -453,14 +328,11 @@
             </div>
           </div>
           <label class="toggle"
-            ><input
-              type="checkbox"
-              id="setting-sound"
-              checked
-              onchange="onSoundToggle(this)" /><span class="tgl-track"
-              ><span class="tgl-thumb"></span></span
+            ><input type="checkbox" id="setting-sound" checked onchange="onSoundToggle(this)" /><span class="tgl-track"><span class="tgl-thumb"></span></span
           ></label>
         </div>
+
+        <!-- Move Highlights -->
         <div class="setting-row">
           <div class="sr-left">
             <div class="sr-icon">✨</div>
@@ -470,76 +342,53 @@
             </div>
           </div>
           <label class="toggle"
-            ><input
-              type="checkbox"
-              id="setting-hints"
-              checked
-              onchange="onHintsToggle(this)" /><span class="tgl-track"
-              ><span class="tgl-thumb"></span></span
+            ><input type="checkbox" id="setting-hints" checked onchange="onHintsToggle(this)" /><span class="tgl-track"><span class="tgl-thumb"></span></span
           ></label>
         </div>
+
+        <!-- Move Hints (NEW) -->
+        <div class="setting-row">
+          <div class="sr-left">
+            <div class="sr-icon">🎯</div>
+            <div class="sr-body">
+              <div class="sr-name">Move Hints</div>
+              <div class="sr-desc">Show legal moves on select</div>
+            </div>
+          </div>
+          <label class="toggle"
+            ><input type="checkbox" id="setting-move-hints" checked onchange="onMoveHintsToggle(this)" /><span class="tgl-track"><span class="tgl-thumb"></span></span
+          ></label>
+        </div>
+
+        <!-- Board Theme -->
         <div class="setting-row col">
           <div class="sr-left">
             <div class="sr-icon">🎨</div>
             <div class="sr-body"><div class="sr-name">Board Theme</div></div>
           </div>
           <div class="theme-swatches">
-            <button
-              class="tsw active"
-              data-theme="classic"
-              onclick="setTheme('classic')"
-            >
-              <div class="tsw-colors">
-                <span style="background: #f0d9b5"></span
-                ><span style="background: #b58863"></span>
-              </div>
+            <button class="tsw active" data-theme="classic" onclick="setTheme('classic')">
+              <div class="tsw-colors"><span style="background:#f0d9b5"></span><span style="background:#b58863"></span></div>
               <em>Classic</em>
             </button>
-            <button
-              class="tsw"
-              data-theme="walnut"
-              onclick="setTheme('walnut')"
-            >
-              <div class="tsw-colors">
-                <span style="background: #e8c99a"></span
-                ><span style="background: #7a4a2e"></span>
-              </div>
+            <button class="tsw" data-theme="walnut" onclick="setTheme('walnut')">
+              <div class="tsw-colors"><span style="background:#e8c99a"></span><span style="background:#7a4a2e"></span></div>
               <em>Walnut</em>
             </button>
             <button class="tsw" data-theme="slate" onclick="setTheme('slate')">
-              <div class="tsw-colors">
-                <span style="background: #cdd5e0"></span
-                ><span style="background: #4a6080"></span>
-              </div>
+              <div class="tsw-colors"><span style="background:#cdd5e0"></span><span style="background:#4a6080"></span></div>
               <em>Slate</em>
             </button>
-            <button
-              class="tsw"
-              data-theme="emerald"
-              onclick="setTheme('emerald')"
-            >
-              <div class="tsw-colors">
-                <span style="background: #c8e8d4"></span
-                ><span style="background: #2e6644"></span>
-              </div>
+            <button class="tsw" data-theme="emerald" onclick="setTheme('emerald')">
+              <div class="tsw-colors"><span style="background:#c8e8d4"></span><span style="background:#2e6644"></span></div>
               <em>Emerald</em>
             </button>
-            <button
-              class="tsw"
-              data-theme="midnight"
-              onclick="setTheme('midnight')"
-            >
-              <div class="tsw-colors">
-                <span style="background: #7880a0"></span
-                ><span style="background: #1a2040"></span>
-              </div>
+            <button class="tsw" data-theme="midnight" onclick="setTheme('midnight')">
+              <div class="tsw-colors"><span style="background:#7880a0"></span><span style="background:#1a2040"></span></div>
               <em>Midnight</em>
             </button>
             <button class="tsw" data-theme="coral" onclick="setTheme('coral')">
-              <div class="tsw-colors">
-                <span style="background: #f5dcd4"></span
-                ><span style="background: #c05040"></span>
-              </div>
+              <div class="tsw-colors"><span style="background:#f5dcd4"></span><span style="background:#c05040"></span></div>
               <em>Coral</em>
             </button>
           </div>
@@ -552,21 +401,9 @@
       <div class="modal-card center-modal">
         <div class="modal-icon">⏸</div>
         <div class="modal-title">Paused</div>
-        <button class="btn-primary full" onclick="resumeGame()">
-          ▶ Resume
-        </button>
-        <button
-          class="btn-ghost full"
-          onclick="
-            playClick();
-            openSettings();
-          "
-        >
-          ⚙ Settings
-        </button>
-        <button class="btn-danger full" onclick="goToMenu()">
-          ↩ Quit Game
-        </button>
+        <button class="btn-primary full" onclick="resumeGame()">▶ Resume</button>
+        <button class="btn-ghost full" onclick="playClick(); openSettings();">⚙ Settings</button>
+        <button class="btn-danger full" onclick="goToMenu()">↩ Quit Game</button>
       </div>
     </div>
 
@@ -576,9 +413,7 @@
         <div class="modal-icon">⚑</div>
         <div class="modal-title">Resign?</div>
         <p class="modal-sub">You will forfeit this game.</p>
-        <button class="btn-danger full" onclick="doResign()">
-          Yes, Resign
-        </button>
+        <button class="btn-danger full" onclick="doResign()">Yes, Resign</button>
         <button class="btn-ghost full" onclick="closeResign()">Cancel</button>
       </div>
     </div>
@@ -589,12 +424,8 @@
         <div class="modal-icon">½</div>
         <div class="modal-title">Draw Offered</div>
         <p class="modal-sub">Your opponent proposes a draw.</p>
-        <button class="btn-primary full" onclick="respondDraw(true)">
-          Accept Draw
-        </button>
-        <button class="btn-ghost full" onclick="respondDraw(false)">
-          Decline
-        </button>
+        <button class="btn-primary full" onclick="respondDraw(true)">Accept Draw</button>
+        <button class="btn-ghost full" onclick="respondDraw(false)">Decline</button>
       </div>
     </div>
 
