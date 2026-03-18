@@ -6,9 +6,6 @@
     <meta name="color-scheme" content="dark" />
     <title>Royal Chess</title>
     <script src="/socket.io/socket.io.js"></script>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css" />
   </head>
   <body data-theme="classic">
@@ -46,90 +43,98 @@
         </div>
       </div>
       <div class="menu-right">
-        <div class="menu-logo">
-          <div class="logo-icon"><span class="logo-piece">♟</span></div>
-          <div>
-            <div class="logo-text-title">Royal Chess</div>
-            <div class="logo-text-sub">Real-time · Multiplayer · AI</div>
-          </div>
-        </div>
+        <div class="menu-right-inner">
 
-        <div id="menu-main" class="menu-section">
-          <div class="menu-play-btns">
-            <button class="play-card" onclick="playClick(); showPanel('panel-multiplayer');">
-              <div class="pc-icon">⚔</div>
-              <div class="pc-body">
-                <div class="pc-title">Play Online</div>
-                <div class="pc-desc">Challenge a friend with a Room ID</div>
-              </div>
-              <div class="pc-arrow">›</div>
+          <!-- Hero block -->
+          <div class="menu-hero">
+            <div class="menu-hero-badge">
+              <div class="menu-hero-badge-dot"></div>
+              <span class="menu-hero-badge-text">Live Multiplayer</span>
+            </div>
+            <h1 class="menu-hero-title">Royal<br><span>Chess</span></h1>
+            <p class="menu-hero-sub">Play online against friends or challenge<br>the AI engine at any difficulty.</p>
+          </div>
+
+          <div id="menu-main" class="menu-section">
+            <div class="menu-play-btns">
+              <button class="play-card" onclick="playClick(); showPanel('panel-multiplayer');">
+                <div class="pc-icon">⚔</div>
+                <div class="pc-body">
+                  <div class="pc-title">Play Online</div>
+                  <div class="pc-desc">Challenge a friend with a Room ID</div>
+                </div>
+                <div class="pc-arrow">›</div>
+              </button>
+              <button class="play-card" onclick="playClick(); showPanel('panel-computer');">
+                <div class="pc-icon">🤖</div>
+                <div class="pc-body">
+                  <div class="pc-title">vs Computer</div>
+                  <div class="pc-desc">Battle the AI engine</div>
+                </div>
+                <div class="pc-arrow">›</div>
+              </button>
+            </div>
+            <div class="menu-utils">
+              <button class="util-btn" onclick="playClick(); openSettings();">⚙ Settings</button>
+              <button class="util-btn" id="sound-btn" onclick="toggleSound()">🔊 Sound</button>
+            </div>
+          </div>
+
+          <div id="panel-multiplayer" class="menu-section hidden">
+            <button class="back-link" onclick="playClick(); showPanel('menu-main');">
+              <span class="back-arrow">←</span> Back
             </button>
-            <button class="play-card" onclick="playClick(); showPanel('panel-computer');">
-              <div class="pc-icon">🤖</div>
-              <div class="pc-body">
-                <div class="pc-title">vs Computer</div>
-                <div class="pc-desc">Battle the AI engine</div>
+            <h2 class="panel-h2">Play Online</h2>
+            <div class="form-group">
+              <label class="form-label">Room ID</label>
+              <input type="text" id="room-input" class="form-input" placeholder="Enter room code…" maxlength="20" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Time Control</label>
+              <div class="time-pills" id="timer-select-mp">
+                <button class="time-pill active" data-time="0">∞</button>
+                <button class="time-pill" data-time="180">3 min</button>
+                <button class="time-pill" data-time="300">5 min</button>
+                <button class="time-pill" data-time="600">10 min</button>
               </div>
-              <div class="pc-arrow">›</div>
+            </div>
+            <button class="btn-primary" onclick="playClick(); joinRoom();">Join Game →</button>
+            <p class="form-hint">Share the same Room ID with your opponent</p>
+          </div>
+
+          <div id="panel-computer" class="menu-section hidden">
+            <button class="back-link" onclick="playClick(); showPanel('menu-main');">
+              <span class="back-arrow">←</span> Back
             </button>
+            <h2 class="panel-h2">vs Computer</h2>
+            <div class="form-group">
+              <label class="form-label">Difficulty</label>
+              <div class="diff-row">
+                <button class="diff-pill active" data-diff="easy" onclick="playClick(); setDiff('easy');">🕯 Squire</button>
+                <button class="diff-pill" data-diff="medium" onclick="playClick(); setDiff('medium');">⚔ Knight</button>
+                <button class="diff-pill" data-diff="hard" onclick="playClick(); setDiff('hard');">👑 King</button>
+              </div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Time Control</label>
+              <div class="time-pills" id="timer-select-cpu">
+                <button class="time-pill active" data-time="0">∞</button>
+                <button class="time-pill" data-time="180">3 min</button>
+                <button class="time-pill" data-time="300">5 min</button>
+                <button class="time-pill" data-time="600">10 min</button>
+              </div>
+            </div>
+            <button class="btn-primary" onclick="playClick(); joinComputer();">Start Game →</button>
           </div>
-          <div class="menu-utils">
-            <button class="util-btn" onclick="playClick(); openSettings();">⚙ Settings</button>
-            <button class="util-btn" id="sound-btn" onclick="toggleSound()">🔊 Sound</button>
-          </div>
-        </div>
 
-        <div id="panel-multiplayer" class="menu-section hidden">
-          <button class="back-link" onclick="playClick(); showPanel('menu-main');">
-            <span class="back-arrow">←</span> Back
-          </button>
-          <h2 class="panel-h2">Play Online</h2>
-          <div class="form-group">
-            <label class="form-label">Room ID</label>
-            <input type="text" id="room-input" class="form-input" placeholder="Enter room code…" maxlength="20" />
-          </div>
-          <div class="form-group">
-            <label class="form-label">Time Control</label>
-            <div class="time-pills" id="timer-select-mp">
-              <button class="time-pill active" data-time="0">∞</button>
-              <button class="time-pill" data-time="180">3 min</button>
-              <button class="time-pill" data-time="300">5 min</button>
-              <button class="time-pill" data-time="600">10 min</button>
-            </div>
-          </div>
-          <button class="btn-primary" onclick="playClick(); joinRoom();">Join Game →</button>
-          <p class="form-hint">Share the same Room ID with your opponent</p>
-        </div>
-
-        <div id="panel-computer" class="menu-section hidden">
-          <button class="back-link" onclick="playClick(); showPanel('menu-main');">
-            <span class="back-arrow">←</span> Back
-          </button>
-          <h2 class="panel-h2">vs Computer</h2>
-          <div class="form-group">
-            <label class="form-label">Difficulty</label>
-            <div class="diff-row">
-              <button class="diff-pill active" data-diff="easy" onclick="playClick(); setDiff('easy');">🕯 Squire</button>
-              <button class="diff-pill" data-diff="medium" onclick="playClick(); setDiff('medium');">⚔ Knight</button>
-              <button class="diff-pill" data-diff="hard" onclick="playClick(); setDiff('hard');">👑 King</button>
-            </div>
-          </div>
-          <div class="form-group">
-            <label class="form-label">Time Control</label>
-            <div class="time-pills" id="timer-select-cpu">
-              <button class="time-pill active" data-time="0">∞</button>
-              <button class="time-pill" data-time="180">3 min</button>
-              <button class="time-pill" data-time="300">5 min</button>
-              <button class="time-pill" data-time="600">10 min</button>
-            </div>
-          </div>
-          <button class="btn-primary" onclick="playClick(); joinComputer();">Start Game →</button>
         </div>
       </div>
     </div>
 
     <!-- ══════════════ GAME ══════════════ -->
     <div id="screen-game" class="screen">
+      <div class="game-bg-canvas"></div>
+      <div class="game-grid-overlay"></div>
       <div class="game-root">
 
         <!-- LEFT SIDEBAR -->

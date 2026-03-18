@@ -187,12 +187,21 @@ function updateClientCastlingRights(piece, fromRow, fromCol) {
 // ══════════════════════════════════════════════════════
 //  PARTICLES
 // ══════════════════════════════════════════════════════
-function spawnParticles(container, count=25, colors=["#d4a843","#f0c060","#a07820"]) {
+function getThemeAccent() {
+  return getComputedStyle(document.body).getPropertyValue('--a').trim() || '#6c8eff';
+}
+function spawnParticles(container, count=25, colors=null, isPanel=false) {
   for (let i = 0; i < count; i++) {
-    const p = document.createElement("div"); p.className = "particle";
-    const sz=2+Math.random()*5, col=colors[Math.floor(Math.random()*colors.length)];
-    const dur=8+Math.random()*16, delay=Math.random()*dur, left=Math.random()*100;
-    p.style.cssText=`width:${sz}px;height:${sz}px;background:${col};left:${left}%;animation-duration:${dur}s;animation-delay:-${delay}s;opacity:${0.3+Math.random()*0.5};`;
+    const p = document.createElement("div");
+    p.className = isPanel ? "particle panel-p" : "particle";
+    const sz = 2 + Math.random() * 5;
+    const acc = colors ? colors[Math.floor(Math.random()*colors.length)] : getThemeAccent();
+    // Panel particles use shorter duration so they're always visible in smaller container
+    const dur = isPanel ? (4 + Math.random()*8) : (8 + Math.random()*18);
+    const delay = Math.random() * dur;
+    const left = Math.random() * 100;
+    // No inline opacity — let the keyframe animation control it
+    p.style.cssText = `width:${sz}px;height:${sz}px;background:${acc};left:${left}%;animation-duration:${dur}s;animation-delay:-${delay}s;`;
     container.appendChild(p);
   }
 }
@@ -264,7 +273,18 @@ function closeSettings() { SFX.click(); document.getElementById("settings-overla
 function onSoundToggle(el)  { settings.sound=el.checked; saveSettings(); const sb=document.getElementById("sound-btn"); if(sb) sb.textContent=settings.sound?"🔊 Sound":"🔇 Sound"; if(settings.sound) SFX.click(); }
 function onHintsToggle(el)  { settings.hints=el.checked; showHints=settings.hints; saveSettings(); renderBoard(board); }
 function onMoveHintsToggle(el) { settings.moveHints=el.checked; saveSettings(); legalMovesCache=[]; selected=null; renderBoard(board); }
-function setTheme(t) { SFX.click(); settings.theme=t; document.body.setAttribute("data-theme",t); document.querySelectorAll(".tsw").forEach(s=>s.classList.toggle("active",s.dataset.theme===t)); saveSettings(); }
+function setTheme(t) { SFX.click(); settings.theme=t; document.body.setAttribute("data-theme",t); document.querySelectorAll(".tsw").forEach(s=>s.classList.toggle("active",s.dataset.theme===t)); saveSettings();
+  setTimeout(()=>{
+    const lb=document.querySelector("#screen-loading .bg-canvas");
+    const mb=document.querySelector("#screen-menu .menu-left .bg-canvas");
+    if(lb){lb.innerHTML='';spawnParticles(lb,30);}
+    if(mb){mb.innerHTML='';spawnParticles(mb,20);}
+    const gb=document.querySelector("#screen-game .game-bg-canvas");
+    if(gb){gb.innerHTML='';spawnParticles(gb,25);}
+    const mrb=document.querySelector("#screen-menu .menu-right-bg");
+    if(mrb){mrb.innerHTML='';spawnParticles(mrb,30,null,true);}
+  },50);
+}
 function toggleSound() { settings.sound=!settings.sound; document.getElementById("setting-sound").checked=settings.sound; saveSettings(); const sb=document.getElementById("sound-btn"); if(sb) sb.textContent=settings.sound?"🔊 Sound":"🔇 Sound"; if(settings.sound) SFX.click(); }
 
 // ══════════════════════════════════════════════════════
@@ -763,6 +783,11 @@ window.addEventListener("load",()=>{
   if(menuBg) spawnParticles(menuBg,20,["#d4a843","#5b8cf5","#4caf82"]);
   document.getElementById("room-input").addEventListener("keydown",e=>{if(e.key==="Enter")joinRoom();});
   setupTimerBtns("timer-select-mp"); setupTimerBtns("timer-select-cpu");
+  // Spawn background particles in game screen
+  const gameBg=document.querySelector("#screen-game .game-bg-canvas");
+  if(gameBg) spawnParticles(gameBg,25);
+  const menuRightBg=document.querySelector("#screen-menu .menu-right-bg");
+  if(menuRightBg) spawnParticles(menuRightBg,30,null,true);
   document.getElementById("settings-overlay").addEventListener("click",function(e){if(e.target===this)closeSettings();});
   document.addEventListener("touchend",e=>{const n=Date.now();if(n-(document._lt||0)<300)e.preventDefault();document._lt=n;},{passive:false});
   ["touchstart","click"].forEach(ev=>document.addEventListener(ev,()=>{try{getAudioCtx().resume();}catch(e){}},{once:true}));
