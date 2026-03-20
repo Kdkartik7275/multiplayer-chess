@@ -43,9 +43,9 @@
         </div>
       </div>
       <div class="menu-right">
+        <div class="menu-right-bg"></div>
         <div class="menu-right-inner">
 
-          <!-- Hero block -->
           <div class="menu-hero">
             <div class="menu-hero-badge">
               <div class="menu-hero-badge-dot"></div>
@@ -183,7 +183,7 @@
             </div>
           </div>
 
-          <!-- Sidebar controls: Pause + Settings only. Draw shown only in multiplayer via JS -->
+          <!-- Sidebar controls -->
           <div class="sb-controls">
             <button class="sb-btn" onclick="togglePause()" id="pause-btn" title="Pause">
               ⏸<span>Pause</span>
@@ -191,6 +191,17 @@
             <button class="sb-btn" onclick="playClick(); openSettings();" title="Settings">
               ⚙<span>Settings</span>
             </button>
+            <!-- Undo: vs Computer only, 2 uses -->
+            <button class="sb-btn" onclick="doUndo()" id="undo-btn" title="Undo Move" style="display:none">
+              ↩<span>Undo</span>
+              <span class="sb-btn-uses" id="undo-uses">2</span>
+            </button>
+            <!-- Hint: vs Computer only, 2 uses -->
+            <button class="sb-btn" onclick="doHint()" id="hint-btn" title="Get Hint" style="display:none">
+              💡<span>Hint</span>
+              <span class="sb-btn-uses" id="hint-uses">2</span>
+            </button>
+            <!-- Draw: multiplayer only -->
             <button class="sb-btn info" onclick="offerDraw()" id="draw-btn" title="Offer Draw" style="display:none">
               ½<span>Draw</span>
             </button>
@@ -209,6 +220,9 @@
             <div class="mob-btns">
               <button class="mob-btn" onclick="togglePause()" id="pause-btn-mobile">⏸</button>
               <button class="mob-btn" onclick="playClick(); openSettings();">⚙</button>
+              <!-- Mobile undo/hint: vs Computer only -->
+              <button class="mob-btn" onclick="doUndo()" id="undo-btn-mobile" title="Undo" style="display:none">↩</button>
+              <button class="mob-btn" onclick="doHint()" id="hint-btn-mobile" title="Hint" style="display:none">💡</button>
               <button class="mob-btn info" onclick="offerDraw()" id="draw-btn-mobile" style="display:none">½</button>
             </div>
           </div>
@@ -238,7 +252,6 @@
           <div class="board-wrap">
             <div class="board-col">
               <div id="board"></div>
-            
             </div>
           </div>
 
@@ -302,13 +315,7 @@
           </div>
           <label class="toggle"><input type="checkbox" id="setting-hints" checked onchange="onHintsToggle(this)" /><span class="tgl-track"><span class="tgl-thumb"></span></span></label>
         </div>
-        <div class="setting-row">
-          <div class="sr-left">
-            <div class="sr-icon">🎯</div>
-            <div class="sr-body"><div class="sr-name">Move Hints</div><div class="sr-desc">Show legal moves on select</div></div>
-          </div>
-          <label class="toggle"><input type="checkbox" id="setting-move-hints" checked onchange="onMoveHintsToggle(this)" /><span class="tgl-track"><span class="tgl-thumb"></span></span></label>
-        </div>
+
         <div class="setting-row col">
           <div class="sr-left">
             <div class="sr-icon">🎨</div>

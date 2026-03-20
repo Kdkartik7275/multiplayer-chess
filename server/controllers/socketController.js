@@ -46,6 +46,8 @@ function registerSocketHandlers(io) {
       room.vsComputer   = true;
       room.difficulty   = difficulty || 'medium';
       room.timerSeconds = timerSeconds || 0;
+      // Initialise move history for undo support
+      room.moveHistory  = [];
       socket.emit('playerAssigned', { color: 'white', roomId });
       socket.emit('gameStart', {
         board: room.board,
@@ -82,12 +84,58 @@ function registerSocketHandlers(io) {
       const isWhite = movedPiece === movedPiece.toUpperCase();
       const needsPromoChoice = p === 'p' && ((isWhite && toRow === 0) || (!isWhite && toRow === 7));
       if (needsPromoChoice && !promotion) {
-        // Ask client to pick promotion piece
         socket.emit('promotionRequired', { fromRow, fromCol, toRow, toCol });
         return;
       }
 
       _executeMove(io, socket, room, roomId, fromRow, fromCol, toRow, toCol, movedPiece, promotion);
+    });
+
+    // ── UNDO MOVE (vs Computer only) ──────────────────────
+    socket.on('undoMove', ({ roomId }) => {
+      const room = getRoom(roomId);
+      if (!room || !room.vsComputer || room.winner) return;
+
+      // Need at least 2 history entries to undo (player move + AI response)
+      if (!room.moveHistory || room.moveHistory.length < 2) {
+        socket.emit('invalidMove', { message: 'Nothing to undo.' });
+        return;
+      }
+
+      // Pop the last 2 history entries (AI move, then player move)
+      room.moveHistory.pop(); // AI move
+      room.moveHistory.pop(); // player move
+
+      // Restore the board and gameState from the snapshot before those 2 moves
+      const snapshot = room.moveHistory.length > 0
+        ? room.moveHistory[room.moveHistory.length - 1]
+        : room.initialSnapshot;
+
+      room.board     = snapshot.board.map(r => [...r]);
+      room.gameState = {
+        castlingRights: {
+          white: { ...snapshot.gameState.castlingRights.white },
+          black: { ...snapshot.gameState.castlingRights.black },
+        },
+        enPassant: snapshot.gameState.enPassant
+          ? { ...snapshot.gameState.enPassant }
+          : null,
+      };
+      room.turn      = 'white'; // always player's turn after undo
+      room.status    = null;
+      room.moveCount = Math.max(0, room.moveCount - 2);
+
+      const lastEntry = room.moveHistory.length > 0
+        ? room.moveHistory[room.moveHistory.length - 1]
+        : null;
+
+      socket.emit('undoApplied', {
+        board:     room.board,
+        gameState: room.gameState,
+        lastMove:  lastEntry ? lastEntry.lastMove : null,
+      });
+
+      console.log(`[U] Undo applied in ${roomId}`);
     });
 
     // ── RESIGN ─────────────────────────────────────────────
@@ -116,7 +164,6 @@ function registerSocketHandlers(io) {
       if (playerIndex === -1) return;
       const color = playerIndex === 0 ? 'white' : 'black';
       room.drawOffer = color;
-      // Send draw offer to opponent
       io.to(roomId).emit('drawOffered', { by: color });
     });
 
@@ -154,6 +201,39 @@ function registerSocketHandlers(io) {
 
 // ── Shared move execution logic ────────────────────────
 function _executeMove(io, socket, room, roomId, fromRow, fromCol, toRow, toCol, movedPiece, promotion) {
+  // Save snapshot BEFORE applying move (for undo)
+  if (room.vsComputer) {
+    if (!room.moveHistory) room.moveHistory = [];
+
+    // Save initial snapshot on very first move
+    if (!room.initialSnapshot) {
+      room.initialSnapshot = {
+        board: room.board.map(r => [...r]),
+        gameState: {
+          castlingRights: {
+            white: { ...room.gameState.castlingRights.white },
+            black: { ...room.gameState.castlingRights.black },
+          },
+          enPassant: room.gameState.enPassant ? { ...room.gameState.enPassant } : null,
+        },
+        lastMove: null,
+      };
+    }
+
+    // Push pre-move snapshot for the player's move
+    room.moveHistory.push({
+      board: room.board.map(r => [...r]),
+      gameState: {
+        castlingRights: {
+          white: { ...room.gameState.castlingRights.white },
+          black: { ...room.gameState.castlingRights.black },
+        },
+        enPassant: room.gameState.enPassant ? { ...room.gameState.enPassant } : null,
+      },
+      lastMove: room.lastMove || null,
+    });
+  }
+
   // Compute en passant target before applying
   const p = movedPiece.toLowerCase();
   const isWhite = movedPiece === movedPiece.toUpperCase();
@@ -162,33 +242,23 @@ function _executeMove(io, socket, room, roomId, fromRow, fromCol, toRow, toCol, 
     newEnPassant = { row: (fromRow + toRow) / 2, col: fromCol };
   }
 
-  // Apply move
+  // Apply player move
   applyMove(room.board, fromRow, fromCol, toRow, toCol, room.gameState, promotion);
   updateCastlingRights(room.gameState.castlingRights, movedPiece, fromRow, fromCol);
-  // Also revoke castling if rook captured
-  const captured = room.board[toRow][toCol]; // already replaced — check target before
-  // (rook capture handled via: if rook moved to corner square with no rook, rights already set)
-
   room.gameState.enPassant = newEnPassant;
   room.moveCount++;
   room.turn = room.turn === 'white' ? 'black' : 'white';
-  room.drawOffer = null; // cancel any pending draw offer on move
+  room.drawOffer = null;
+  room.lastMove  = { fromRow, fromCol, toRow, toCol, piece: movedPiece };
 
-  // Check game status for the player who now has to move
+  // Check game status
   const status = getGameStatus(room.board, room.turn, room.gameState);
   room.status = status;
 
   let winner = null;
-  if (status === 'checkmate') {
-    winner = room.turn === 'white' ? 'black' : 'white'; // person who just moved wins
-    room.winner = winner;
-  }
-  if (status === 'stalemate') {
-    winner = 'draw';
-    room.winner = 'draw';
-  }
+  if (status === 'checkmate') { winner = room.turn === 'white' ? 'black' : 'white'; room.winner = winner; }
+  if (status === 'stalemate') { winner = 'draw'; room.winner = 'draw'; }
 
-  // Find king position if in check (for client highlight)
   let checkSquare = null;
   if (status === 'check' || status === 'checkmate') {
     const { findKing } = require('../utils/boardUtils');
@@ -219,7 +289,6 @@ function _executeMove(io, socket, room, roomId, fromRow, fromCol, toRow, toCol, 
 
       const aiMove = getBestMove(room.board, room.difficulty);
       if (!aiMove) {
-        // Computer has no legal moves
         const aiStatus = getGameStatus(room.board, 'black', room.gameState);
         const aiWinner = aiStatus === 'checkmate' ? 'white' : 'draw';
         room.winner = aiWinner;
@@ -235,7 +304,6 @@ function _executeMove(io, socket, room, roomId, fromRow, fromCol, toRow, toCol, 
       const aiPiece = room.board[aiMove.fromRow][aiMove.fromCol];
       const aiP = aiPiece.toLowerCase();
 
-      // Always promote to queen for AI
       let aiPromotion = null;
       if (aiP === 'p' && aiMove.toRow === 7) aiPromotion = 'q';
 
@@ -244,11 +312,27 @@ function _executeMove(io, socket, room, roomId, fromRow, fromCol, toRow, toCol, 
         aiEnPassant = { row: (aiMove.fromRow + aiMove.toRow) / 2, col: aiMove.fromCol };
       }
 
+      // Save snapshot BEFORE AI move (for undo — we need to be able to remove AI move too)
+      if (room.vsComputer) {
+        room.moveHistory.push({
+          board: room.board.map(r => [...r]),
+          gameState: {
+            castlingRights: {
+              white: { ...room.gameState.castlingRights.white },
+              black: { ...room.gameState.castlingRights.black },
+            },
+            enPassant: room.gameState.enPassant ? { ...room.gameState.enPassant } : null,
+          },
+          lastMove: { fromRow, fromCol, toRow, toCol, piece: movedPiece },
+        });
+      }
+
       applyMove(room.board, aiMove.fromRow, aiMove.fromCol, aiMove.toRow, aiMove.toCol, room.gameState, aiPromotion);
       updateCastlingRights(room.gameState.castlingRights, aiPiece, aiMove.fromRow, aiMove.fromCol);
       room.gameState.enPassant = aiEnPassant;
       room.moveCount++;
       room.turn = 'white';
+      room.lastMove = { ...aiMove, piece: aiPiece };
 
       const afterStatus = getGameStatus(room.board, 'white', room.gameState);
       room.status = afterStatus;

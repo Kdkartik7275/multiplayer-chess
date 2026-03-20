@@ -10,7 +10,10 @@ let timerSeconds = 0, timerMyLeft = 0, timerOppLeft = 0,
     timerInterval = null, timerMaxSeconds = 0;
 let movePairs = [], moveFlat = [], boardSnapshots = [],
     historyIndex = -1, isViewingHistory = false;
-let settings = { sound: true, hints: true, moveHints: true, theme: "classic" };
+let settings = { sound: true, hints: true, theme: "classic" };
+
+// ── Undo / Hint ──────────────────────────────────────
+let undosLeft = 2, hintsLeft = 2;
 
 // ── Thinking timer (client-only, vs Computer, infinite mode) ──
 let thinkStart = null, thinkInterval = null, thinkSeconds = 0;
@@ -29,7 +32,7 @@ const FILES = ["a","b","c","d","e","f","g","h"];
 const FLOATPIECES = ["♟","♞","♝","♜","♛","♚","♙","♘","♗","♖","♕","♔"];
 
 // ══════════════════════════════════════════════════════
-//  CLIENT-SIDE MOVE VALIDATOR  (mirrors boardUtils.js exactly)
+//  CLIENT-SIDE MOVE VALIDATOR
 // ══════════════════════════════════════════════════════
 function cloneBoard(bd) { return bd.map(r => [...r]); }
 
@@ -196,11 +199,9 @@ function spawnParticles(container, count=25, colors=null, isPanel=false) {
     p.className = isPanel ? "particle panel-p" : "particle";
     const sz = 2 + Math.random() * 5;
     const acc = colors ? colors[Math.floor(Math.random()*colors.length)] : getThemeAccent();
-    // Panel particles use shorter duration so they're always visible in smaller container
     const dur = isPanel ? (4 + Math.random()*8) : (8 + Math.random()*18);
     const delay = Math.random() * dur;
     const left = Math.random() * 100;
-    // No inline opacity — let the keyframe animation control it
     p.style.cssText = `width:${sz}px;height:${sz}px;background:${acc};left:${left}%;animation-duration:${dur}s;animation-delay:-${delay}s;`;
     container.appendChild(p);
   }
@@ -251,6 +252,8 @@ const SFX = {
   win()     { [523,659,784,1046,1318].forEach((f,i)=>setTimeout(()=>tone(f,"sine",0.3,0.12),i*100)); },
   lose()    { [523,415,330,261,220].forEach((f,i)=>setTimeout(()=>tone(f,"triangle",0.3,0.1),i*130)); },
   tick()    { tone(1300,"sine",0.03,0.04); },
+  hint()    { [660,880].forEach((f,i)=>setTimeout(()=>tone(f,"sine",0.18,0.09),i*80)); },
+  undo()    { tone(440,"sine",0.2,0.1); setTimeout(()=>tone(330,"sine",0.15,0.08),100); },
 };
 function playClick() { SFX.click(); }
 
@@ -264,7 +267,6 @@ function applySettings() {
   document.querySelectorAll(".tsw").forEach(s=>s.classList.toggle("active",s.dataset.theme===settings.theme));
   document.getElementById("setting-sound").checked=settings.sound;
   document.getElementById("setting-hints").checked=settings.hints;
-  const mhEl=document.getElementById("setting-move-hints"); if(mhEl) mhEl.checked=settings.moveHints;
   showHints=settings.hints;
   const sb=document.getElementById("sound-btn"); if(sb) sb.textContent=settings.sound?"🔊 Sound":"🔇 Sound";
 }
@@ -272,23 +274,133 @@ function openSettings()  { document.getElementById("settings-overlay").classList
 function closeSettings() { SFX.click(); document.getElementById("settings-overlay").classList.add("hidden"); }
 function onSoundToggle(el)  { settings.sound=el.checked; saveSettings(); const sb=document.getElementById("sound-btn"); if(sb) sb.textContent=settings.sound?"🔊 Sound":"🔇 Sound"; if(settings.sound) SFX.click(); }
 function onHintsToggle(el)  { settings.hints=el.checked; showHints=settings.hints; saveSettings(); renderBoard(board); }
-function onMoveHintsToggle(el) { settings.moveHints=el.checked; saveSettings(); legalMovesCache=[]; selected=null; renderBoard(board); }
-function setTheme(t) { SFX.click(); settings.theme=t; document.body.setAttribute("data-theme",t); document.querySelectorAll(".tsw").forEach(s=>s.classList.toggle("active",s.dataset.theme===t)); saveSettings();
-  setTimeout(()=>{
-    const lb=document.querySelector("#screen-loading .bg-canvas");
-    const mb=document.querySelector("#screen-menu .menu-left .bg-canvas");
-    if(lb){lb.innerHTML='';spawnParticles(lb,30);}
-    if(mb){mb.innerHTML='';spawnParticles(mb,20);}
-    const gb=document.querySelector("#screen-game .game-bg-canvas");
-    if(gb){gb.innerHTML='';spawnParticles(gb,25);}
-    const mrb=document.querySelector("#screen-menu .menu-right-bg");
-    if(mrb){mrb.innerHTML='';spawnParticles(mrb,30,null,true);}
-  },50);
+
+// setTheme — fixed: no innerHTML wipe, just update attribute + swatches
+function setTheme(t) {
+  SFX.click();
+  settings.theme=t;
+  document.body.setAttribute("data-theme",t);
+  document.querySelectorAll(".tsw").forEach(s=>s.classList.toggle("active",s.dataset.theme===t));
+  saveSettings();
 }
+
 function toggleSound() { settings.sound=!settings.sound; document.getElementById("setting-sound").checked=settings.sound; saveSettings(); const sb=document.getElementById("sound-btn"); if(sb) sb.textContent=settings.sound?"🔊 Sound":"🔇 Sound"; if(settings.sound) SFX.click(); }
 
 // ══════════════════════════════════════════════════════
-//  THINKING TIMER  (client-only, vs Computer, infinite mode)
+//  UNDO & HINT  (vs Computer only, 2 uses each per game)
+// ══════════════════════════════════════════════════════
+function resetUndoHint() {
+  undosLeft = 2; hintsLeft = 2;
+  _updateUndoHintUI();
+}
+
+function _updateUndoHintUI() {
+  // Sidebar
+  const undoBtn  = document.getElementById("undo-btn");
+  const hintBtn  = document.getElementById("hint-btn");
+  const undoUses = document.getElementById("undo-uses");
+  const hintUses = document.getElementById("hint-uses");
+  // Mobile
+  const undoBtnM = document.getElementById("undo-btn-mobile");
+  const hintBtnM = document.getElementById("hint-btn-mobile");
+
+  // Show only in vs-computer games
+  const show = isVsComputer && !gameOver;
+  [undoBtn, undoBtnM].forEach(b => { if(b) b.style.display = show ? "" : "none"; });
+  [hintBtn, hintBtnM].forEach(b => { if(b) b.style.display = show ? "" : "none"; });
+
+  if (undoUses) undoUses.textContent = undosLeft;
+  if (hintUses) hintUses.textContent = hintsLeft;
+
+  if (undoBtn)  undoBtn.disabled  = (undosLeft <= 0 || gameOver);
+  if (undoBtnM) undoBtnM.disabled = (undosLeft <= 0 || gameOver);
+  if (hintBtn)  hintBtn.disabled  = (hintsLeft <= 0 || gameOver);
+  if (hintBtnM) hintBtnM.disabled = (hintsLeft <= 0 || gameOver);
+}
+
+function doUndo() {
+  if (!isVsComputer || undosLeft <= 0 || gameOver) return;
+  // Need at least 2 snapshots (player move + AI response)
+  if (boardSnapshots.length < 2) return;
+  SFX.undo();
+  undosLeft--;
+  _updateUndoHintUI();
+  // Tell the server to roll back 2 moves (player + AI response)
+  // Server will reply with undoApplied containing the restored board state
+  socket.emit("undoMove", { roomId });
+}
+
+function doHint() {
+  if (!isVsComputer || hintsLeft <= 0 || gameOver || currentTurn !== myColor) return;
+  SFX.hint();
+  hintsLeft--;
+
+  // Find piece with most legal moves
+  let bestRow = -1, bestCol = -1, bestDests = [];
+  let bestCount = -1;
+  for (let r = 0; r < 8; r++) {
+    for (let c = 0; c < 8; c++) {
+      const piece = board[r][c];
+      if (!piece || piece === ' ') continue;
+      const isW = piece === piece.toUpperCase();
+      if (myColor==='white' && !isW) continue;
+      if (myColor==='black' &&  isW) continue;
+      const dests = getLegalDestinations(board, r, c, myColor, clientGameState);
+      if (dests.length > bestCount) {
+        bestCount = dests.length;
+        bestRow = r; bestCol = c;
+        bestDests = dests;
+      }
+    }
+  }
+
+  _updateUndoHintUI();
+  if (bestRow === -1) return;
+
+  // Build a lookup of all board squares by [row][col]
+  const sqMap = {};
+  document.querySelectorAll("#board .sq").forEach(sq => {
+    const r = +sq.dataset.row, c = +sq.dataset.col;
+    if (!sqMap[r]) sqMap[r] = {};
+    sqMap[r][c] = sq;
+  });
+
+  // Highlight source square (the piece to move)
+  const srcSq = sqMap[bestRow] && sqMap[bestRow][bestCol];
+  if (srcSq) srcSq.classList.add("hint-sq");
+
+  // Show destination dots/rings on each legal target square
+  const hintEls = []; // track injected elements for cleanup
+  bestDests.forEach(({row, col}) => {
+    const sq = sqMap[row] && sqMap[row][col];
+    if (!sq) return;
+    const isCapture = board[row][col] && board[row][col] !== ' ';
+    if (isCapture) {
+      // Capture ring — 4-corner brackets
+      sq.classList.add("hint-dest-capture");
+      const tl = document.createElement("span"); tl.className = "hdot-tl"; sq.appendChild(tl); hintEls.push({sq, el:tl});
+      const tr = document.createElement("span"); tr.className = "hdot-tr"; sq.appendChild(tr); hintEls.push({sq, el:tr});
+      const bl = document.createElement("span"); bl.className = "hdot-bl"; sq.appendChild(bl); hintEls.push({sq, el:bl});
+      const br = document.createElement("span"); br.className = "hdot-br"; sq.appendChild(br); hintEls.push({sq, el:br});
+    } else {
+      // Move dot
+      const dot = document.createElement("div"); dot.className = "hint-dest-dot"; sq.appendChild(dot);
+      hintEls.push({sq, el:dot});
+    }
+  });
+
+  // Auto-clear after 3 seconds
+  setTimeout(() => {
+    if (srcSq) srcSq.classList.remove("hint-sq");
+    hintEls.forEach(({sq, el}) => {
+      el.remove();
+      sq.classList.remove("hint-dest-capture");
+    });
+  }, 3000);
+}
+
+// ══════════════════════════════════════════════════════
+//  THINKING TIMER
 // ══════════════════════════════════════════════════════
 function startThinkTimer() {
   if (!isVsComputer || timerMaxSeconds>0 || gameOver || gamePaused) return;
@@ -310,17 +422,14 @@ function _showThinkTimer(visible) {
 function _updateThinkDisplay() {
   const s=thinkSeconds;
   const display=Math.floor(s/60)+":"+String(s%60).padStart(2,"0");
-  // Colour: green < 30s, amber 30-90s, red > 90s
   const urgency = s>90 ? " low" : "";
   const barCol = s>90
     ? "linear-gradient(90deg,#902020,#e05555)"
     : s>30
       ? "linear-gradient(90deg,#a07820,#d4a843)"
       : "linear-gradient(90deg,#2d8f5e,#4caf82)";
-  // Sidebar
   const myV=document.getElementById("timer-my-val"); if(myV){ myV.textContent=display; myV.className="sb-ctime active"+urgency; }
   const myB=document.getElementById("timer-my-bar"); if(myB){ myB.style.width=Math.min((s%120)/120*100,100)+"%"; myB.style.background=barCol; }
-  // Mobile
   const myVm=document.getElementById("timer-my-val-mobile"); if(myVm){ myVm.textContent=display; myVm.className="mob-ptime active"+urgency; }
 }
 
@@ -417,7 +526,7 @@ function hideBanner() { const sb=document.getElementById("status-banner");if(sb)
 function setThinking(val) { document.getElementById("thinking-bar").style.display=val?"flex":"none"; document.getElementById("thinking-bar-mobile").style.display=val?"flex":"none"; }
 
 // ══════════════════════════════════════════════════════
-//  TIMER (countdown)
+//  TIMER
 // ══════════════════════════════════════════════════════
 function initTimers(secs) {
   if(!secs) return;
@@ -465,15 +574,13 @@ function buildLabels() {
 }
 
 // ══════════════════════════════════════════════════════
-//  BOARD RENDER  (with legal move hints)
+//  BOARD RENDER
 // ══════════════════════════════════════════════════════
 function renderBoard(bd, overrideCheck) {
   const el=document.getElementById("board"); el.innerHTML="";
   const chk=overrideCheck!==undefined?overrideCheck:checkSquare;
   const rows=myColor==="black"?[...Array(8).keys()].reverse():[...Array(8).keys()];
   const cols=myColor==="black"?[...Array(8).keys()].reverse():[...Array(8).keys()];
-  // Build fast lookup for legal destinations
-  const legalSet=new Set(legalMovesCache.map(m=>m.row*8+m.col));
   rows.forEach(r=>cols.forEach(c=>{
     const sq=document.createElement("div");
     sq.classList.add("sq",(r+c)%2===0?"light":"dark");
@@ -484,19 +591,7 @@ function renderBoard(bd, overrideCheck) {
     }
     if(selected&&selected.row===r&&selected.col===c) sq.classList.add("selected");
     if(chk&&r===chk.row&&c===chk.col) sq.classList.add("in-check");
-    // Legal move hint overlays
-    if(settings.moveHints&&legalSet.has(r*8+c)){
-      const target=bd[r][c];
-      if(target&&target!==' ') {
-        // Four-corner targeting reticle — ::before/::after = top corners, spans = bottom corners
-        sq.classList.add("hint-capture");
-        const bl=document.createElement("span"); bl.className="cap-tl"; sq.appendChild(bl);
-        const br=document.createElement("span"); br.className="cap-br"; sq.appendChild(br);
-      } else {
-        // Glowing pulse dot on empty reachable squares
-        const dot=document.createElement("div"); dot.className="move-dot"; sq.appendChild(dot);
-      }
-    }
+
     const piece=bd[r][c];
     if(piece&&piece!==" "){
       const span=document.createElement("span");
@@ -510,7 +605,7 @@ function renderBoard(bd, overrideCheck) {
 }
 
 // ══════════════════════════════════════════════════════
-//  ANIMATION
+//  ANIMATION — shadow + arc lift
 // ══════════════════════════════════════════════════════
 function animatePieceMove(piece,fromRow,fromCol,toRow,toCol,done) {
   const boardEl=document.getElementById("board"),boardRect=boardEl.getBoundingClientRect(),sqSize=boardRect.width/8;
@@ -518,15 +613,70 @@ function animatePieceMove(piece,fromRow,fromCol,toRow,toCol,done) {
   const dToR=myColor==="black"?7-toRow:toRow,dToC=myColor==="black"?7-toCol:toCol;
   const fx=boardRect.left+dFromC*sqSize,fy=boardRect.top+dFromR*sqSize;
   const tx=boardRect.left+dToC*sqSize,ty=boardRect.top+dToR*sqSize;
-  const isWhite=piece===piece.toUpperCase(),glyph=GLYPHS[piece]||piece,DURATION=210;
-  const flyer=document.createElement("span");
-  flyer.style.cssText=["position:fixed",`left:${fx}px`,`top:${fy}px`,`width:${sqSize}px`,`height:${sqSize}px`,`font-size:${sqSize*0.74}px`,"line-height:1","text-align:center","display:flex","align-items:center","justify-content:center","pointer-events:none","z-index:9999",
-    isWhite?"color:#000000;-webkit-text-stroke:0;filter:invert(1) drop-shadow(0 1px 0 #000) drop-shadow(0 -1px 0 #000) drop-shadow(1px 0 0 #000) drop-shadow(-1px 0 0 #000)":"color:#000000;-webkit-text-stroke:0;filter:drop-shadow(0 1px 0 rgba(220,200,160,0.9)) drop-shadow(0 -1px 0 rgba(220,200,160,0.9)) drop-shadow(1px 0 0 rgba(220,200,160,0.9)) drop-shadow(-1px 0 0 rgba(220,200,160,0.9))",
-    "will-change:transform","transform-origin:center center"].join(";");
-  flyer.textContent=glyph; document.body.appendChild(flyer);
+  const isWhite=piece===piece.toUpperCase(),glyph=GLYPHS[piece]||piece,DURATION=260;
   const dx=tx-fx,dy=ty-fy;
-  const anim=flyer.animate([{transform:"translate(0,0) scale(1.18)",offset:0},{transform:`translate(${dx*.45}px,${dy*.45}px) scale(1.26)`,offset:0.4},{transform:`translate(${dx}px,${dy}px) scale(1.12)`,offset:1}],{duration:DURATION,easing:"cubic-bezier(0.25,0.1,0.25,1)",fill:"forwards"});
-  anim.onfinish=()=>{flyer.remove();done();document.querySelectorAll("#board .sq").forEach(sq=>{if(+sq.dataset.row===toRow&&+sq.dataset.col===toCol){sq.classList.add("piece-landing");setTimeout(()=>sq.classList.remove("piece-landing"),280);}});};
+
+  // Shadow oval on the board surface
+  const shadow=document.createElement("div");
+  const sw=sqSize*0.55, sh=sqSize*0.18;
+  shadow.style.cssText=[
+    "position:fixed",
+    `left:${fx+sqSize/2-sw/2}px`,`top:${fy+sqSize*0.78}px`,
+    `width:${sw}px`,`height:${sh}px`,
+    "background:rgba(0,0,0,0.5)","border-radius:50%",
+    "filter:blur(6px)","pointer-events:none","z-index:9997",
+    "will-change:transform,opacity"
+  ].join(";");
+  document.body.appendChild(shadow);
+
+  // Piece filters
+  const baseFilter=isWhite
+    ?"invert(1) drop-shadow(0 2px 0 rgba(0,0,0,.9)) drop-shadow(0 -1px 0 rgba(0,0,0,.9)) drop-shadow(1px 0 0 rgba(0,0,0,.9)) drop-shadow(-1px 0 0 rgba(0,0,0,.9))"
+    :"drop-shadow(0 2px 0 rgba(220,200,160,.85)) drop-shadow(0 -1px 0 rgba(220,200,160,.85)) drop-shadow(1px 0 0 rgba(220,200,160,.85)) drop-shadow(-1px 0 0 rgba(220,200,160,.85))";
+  const liftFilter=isWhite
+    ?"invert(1) drop-shadow(0 8px 10px rgba(0,0,0,.75)) drop-shadow(0 -1px 0 rgba(0,0,0,.9)) drop-shadow(1px 0 0 rgba(0,0,0,.9)) drop-shadow(-1px 0 0 rgba(0,0,0,.9))"
+    :"drop-shadow(0 8px 10px rgba(0,0,0,.7)) drop-shadow(0 -1px 0 rgba(220,200,160,.85)) drop-shadow(1px 0 0 rgba(220,200,160,.85)) drop-shadow(-1px 0 0 rgba(220,200,160,.85))";
+
+  // Flying piece
+  const flyer=document.createElement("span");
+  flyer.style.cssText=[
+    "position:fixed",`left:${fx}px`,`top:${fy}px`,
+    `width:${sqSize}px`,`height:${sqSize}px`,`font-size:${sqSize*0.74}px`,
+    "line-height:1","text-align:center","display:flex","align-items:center","justify-content:center",
+    "pointer-events:none","z-index:9999","color:#000000","-webkit-text-stroke:0",
+    `filter:${baseFilter}`,"will-change:transform,filter","transform-origin:center center"
+  ].join(";");
+  flyer.textContent=glyph;
+  document.body.appendChild(flyer);
+
+  // Arc: piece rises above straight line at midpoint
+  const arcY=Math.min(sqSize*0.9,Math.sqrt(dx*dx+dy*dy)*0.22);
+
+  // Animate piece with arc
+  flyer.animate([
+    {transform:"translate(0,0) scale(1)",         filter:baseFilter, offset:0},
+    {transform:`translate(${dx*.45}px,${dy*.45-arcY}px) scale(1.22)`,filter:liftFilter,offset:0.4},
+    {transform:`translate(${dx}px,${dy}px) scale(1.08)`, filter:liftFilter, offset:0.85},
+    {transform:`translate(${dx}px,${dy}px) scale(1)`,    filter:baseFilter, offset:1}
+  ],{duration:DURATION,easing:"cubic-bezier(0.22,0.8,0.35,1)",fill:"forwards"});
+
+  // Animate shadow: expands at peak lift, shrinks on land
+  const anim=shadow.animate([
+    {transform:"translate(0,0) scale(1)",              opacity:0.5,  offset:0},
+    {transform:`translate(${dx*.45}px,${dy*.45}px) scale(1.5,0.65)`,opacity:0.22,offset:0.4},
+    {transform:`translate(${dx*.85}px,${dy*.85}px) scale(1.2,.8)`,  opacity:0.32,offset:0.85},
+    {transform:`translate(${dx}px,${dy}px) scale(1)`, opacity:0.5,  offset:1}
+  ],{duration:DURATION,easing:"cubic-bezier(0.22,0.8,0.35,1)",fill:"forwards"});
+
+  anim.onfinish=()=>{
+    flyer.remove(); shadow.remove(); done();
+    document.querySelectorAll("#board .sq").forEach(sq=>{
+      if(+sq.dataset.row===toRow&&+sq.dataset.col===toCol){
+        sq.classList.add("piece-landing");
+        setTimeout(()=>sq.classList.remove("piece-landing"),300);
+      }
+    });
+  };
 }
 
 // ══════════════════════════════════════════════════════
@@ -537,11 +687,10 @@ function onSquareClick(row, col) {
   const piece=board[row][col];
   if(selected){
     if(selected.row===row&&selected.col===col){ selected=null;legalMovesCache=[];renderBoard(board);return; }
-    // Switch selection to another own piece
     if(piece&&piece!==' '){
       const isW=piece===piece.toUpperCase();
       const isOwn=(myColor==='white'&&isW)||(myColor==='black'&&!isW);
-      if(isOwn){ SFX.select(); selected={row,col}; legalMovesCache=settings.moveHints?getLegalDestinations(board,row,col,myColor,clientGameState):[]; renderBoard(board); return; }
+      if(isOwn){ SFX.select(); selected={row,col}; legalMovesCache=[]; renderBoard(board); return; }
     }
     const fromRow=selected.row,fromCol=selected.col;
     const isCapture=piece&&piece!==" ";
@@ -555,7 +704,7 @@ function onSquareClick(row, col) {
     if(myColor==="white"&&piece!==piece.toUpperCase()) return;
     if(myColor==="black"&&piece===piece.toUpperCase()) return;
     SFX.select(); selected={row,col};
-    legalMovesCache=settings.moveHints?getLegalDestinations(board,row,col,myColor,clientGameState):[];
+    legalMovesCache=[];
     renderBoard(board);
   }
 }
@@ -614,15 +763,12 @@ function setupPlayerCards() {
   document.getElementById("opp-label-mobile").textContent=oppColor==="white"?"White Pieces":"Black Pieces";
   document.getElementById("opp-name-mobile").textContent=isVsComputer?"AI Engine":"Opponent";
 }
-// Piece material values for score display
-const PIECE_VAL = {P:1,p:1,N:3,n:3,B:3,b:3,R:5,r:5,Q:9,q:9,K:0,k:0};
 
+const PIECE_VAL = {P:1,p:1,N:3,n:3,B:3,b:3,R:5,r:5,Q:9,q:9,K:0,k:0};
 function _renderCaptured(containerId, pieces) {
-  const el = document.getElementById(containerId);
-  if (!el) return;
+  const el = document.getElementById(containerId); if (!el) return;
   el.innerHTML = "";
   if (!pieces.length) return;
-  // Sort: queens first, then rooks, bishops, knights, pawns
   const order = {Q:0,q:0,R:1,r:1,B:2,b:2,N:3,n:3,P:4,p:4};
   const sorted = [...pieces].sort((a,b)=>(order[a]??9)-(order[b]??9));
   let score = 0;
@@ -630,48 +776,35 @@ function _renderCaptured(containerId, pieces) {
     const span=document.createElement("span");
     const isW=p===p.toUpperCase();
     span.className="cap-piece "+(isW?"white-cap":"black-cap");
-    span.textContent=GLYPHS[p]||"";
-    span.title=p.toUpperCase();
-    el.appendChild(span);
-    score += PIECE_VAL[p]||0;
+    span.textContent=GLYPHS[p]||""; span.title=p.toUpperCase();
+    el.appendChild(span); score += PIECE_VAL[p]||0;
   });
   if (score > 0) {
-    const sc = document.createElement("span");
-    sc.className="cap-score";
-    sc.textContent="+"+score;
-    el.appendChild(sc);
+    const sc = document.createElement("span"); sc.className="cap-score"; sc.textContent="+"+score; el.appendChild(sc);
   }
 }
-
-// Captured piece buckets (keyed by container id)
-const _capBuckets = {
-  "captured-me":[], "captured-opp":[],
-  "captured-me-mobile":[], "captured-opp-mobile":[]
-};
-
+const _capBuckets = {"captured-me":[],"captured-opp":[],"captured-me-mobile":[],"captured-opp-mobile":[]};
 function addCapturedPiece(piece) {
   const isW=piece===piece.toUpperCase();
   const byMe=(isW&&myColor==="black")||(!isW&&myColor==="white");
-  const meId=byMe?"captured-me":"captured-opp";
-  const meIdM=byMe?"captured-me-mobile":"captured-opp-mobile";
-  _capBuckets[meId].push(piece);
-  _capBuckets[meIdM].push(piece);
-  _renderCaptured(meId, _capBuckets[meId]);
-  _renderCaptured(meIdM, _capBuckets[meIdM]);
+  const meId=byMe?"captured-me":"captured-opp", meIdM=byMe?"captured-me-mobile":"captured-opp-mobile";
+  _capBuckets[meId].push(piece); _capBuckets[meIdM].push(piece);
+  _renderCaptured(meId,_capBuckets[meId]); _renderCaptured(meIdM,_capBuckets[meIdM]);
+}
+function resetCapturedPieces() {
+  Object.keys(_capBuckets).forEach(k=>{_capBuckets[k]=[];});
+  Object.keys(_capBuckets).forEach(k=>{const el=document.getElementById(k);if(el)el.innerHTML="";});
 }
 
-function resetCapturedPieces() {
-  Object.keys(_capBuckets).forEach(k=>{ _capBuckets[k]=[]; });
-  Object.keys(_capBuckets).forEach(k=>{ const el=document.getElementById(k); if(el) el.innerHTML=""; });
-}
 function updateGameActButtons() {
-  // Draw button: only visible in multiplayer, disabled when game over
+  // Draw: multiplayer only
   ["draw-btn","draw-btn-mobile"].forEach(id=>{
-    const e=document.getElementById(id);
-    if(!e) return;
+    const e=document.getElementById(id); if(!e) return;
     if(isVsComputer){ e.style.display="none"; }
     else { e.style.display=""; e.disabled=gameOver; }
   });
+  // Undo/Hint: vs computer only
+  _updateUndoHintUI();
 }
 
 // ══════════════════════════════════════════════════════
@@ -707,6 +840,7 @@ socket.on("gameStart",({board:bd,turn,vsComputer:cpu,timerSeconds:ts})=>{
   board=bd; currentTurn=turn; isVsComputer=!!cpu;
   clientGameState={castlingRights:{white:{kingSide:true,queenSide:true},black:{kingSide:true,queenSide:true}},enPassant:null};
   resetCapturedPieces();
+  resetUndoHint(); // reset undo/hint counters every new game
   setupPlayerCards(); renderBoard(bd); updateTurnIndicators(turn,null,null); updateActiveCard(turn); updateGameActButtons(); SFX.start();
   if(ts&&ts>0){timerSeconds=ts;initTimers(ts);startTimer();}
   if(isVsComputer&&(!ts||ts===0)&&turn===myColor) startThinkTimer();
@@ -717,7 +851,6 @@ socket.on("boardUpdate",({board:bd,turn,winner,moveCount,lastMove:lm,isComputerM
   board=bd; currentTurn=turn; lastMove=lm; selected=null; legalMovesCache=[];
   totalMoves=moveCount||totalMoves+1; checkSquare=cs||null;
   if(capturedPiece) addCapturedPiece(capturedPiece);
-  // Update client state mirror
   if(lm&&lm.piece){
     updateClientCastlingRights(lm.piece,lm.fromRow,lm.fromCol);
     const mp=lm.piece.toLowerCase();
@@ -741,7 +874,6 @@ socket.on("boardUpdate",({board:bd,turn,winner,moveCount,lastMove:lm,isComputerM
   updateTurnIndicators(turn,winner,status); updateActiveCard(turn);
   if(isComputerMove) SFX.move();
   hideBanner();
-  // Think timer management
   if(isVsComputer&&timerMaxSeconds===0){
     if(turn===myColor&&!winner&&!gamePaused) startThinkTimer();
     else { stopThinkTimer(); if(!winner) resetThinkTimer(); }
@@ -766,10 +898,49 @@ socket.on("playerLeft",({message})=>{
 });
 socket.on("roomFull",({message})=>{switchScreen("screen-game","screen-menu");showPanel("panel-multiplayer");alert(message);});
 
+// Server confirmed undo — restore the board it sends back
+socket.on("undoApplied",({board:bd, gameState:gs, lastMove:lm})=>{
+  // Remove last 2 client snapshots (AI + player moves)
+  // Remove the last 2 snapshots (player move + AI response)
+  const toRemove = Math.min(2, boardSnapshots.length);
+  if (toRemove > 0) boardSnapshots.splice(boardSnapshots.length - toRemove, toRemove);
+  // Restore board and game state from server truth
+  board = bd;
+  currentTurn = myColor;
+  lastMove = lm || null;
+  checkSquare = null;
+  selected = null; legalMovesCache = [];
+  // Restore client-side castling/enPassant to match server
+  if (gs) {
+    clientGameState.castlingRights = {
+      white:{...gs.castlingRights.white},
+      black:{...gs.castlingRights.black}
+    };
+    clientGameState.enPassant = gs.enPassant ? {...gs.enPassant} : null;
+  }
+  renderBoard(board);
+  hideBanner();
+  updateActiveCard(currentTurn);
+  updateTurnIndicators(currentTurn, null, null);
+});
+
 // ══════════════════════════════════════════════════════
 //  HISTORY
 // ══════════════════════════════════════════════════════
-function recordSnapshot(bd,lm,chkSq){boardSnapshots.push({board:bd.map(r=>[...r]),lastMove:lm?{...lm}:null,checkSq:chkSq||null});}
+function recordSnapshot(bd,lm,chkSq){
+  boardSnapshots.push({
+    board:bd.map(r=>[...r]),
+    lastMove:lm?{...lm}:null,
+    checkSq:chkSq||null,
+    gs:{
+      castlingRights:{
+        white:{...clientGameState.castlingRights.white},
+        black:{...clientGameState.castlingRights.black}
+      },
+      enPassant:clientGameState.enPassant?{...clientGameState.enPassant}:null
+    }
+  });
+}
 function historyStep(){}
 function historyGoLive(){historyIndex=-1;isViewingHistory=false;document.getElementById("board").classList.remove("viewing-history");renderBoard(board);}
 function jumpToSnap(){}
@@ -783,7 +954,6 @@ window.addEventListener("load",()=>{
   if(menuBg) spawnParticles(menuBg,20,["#d4a843","#5b8cf5","#4caf82"]);
   document.getElementById("room-input").addEventListener("keydown",e=>{if(e.key==="Enter")joinRoom();});
   setupTimerBtns("timer-select-mp"); setupTimerBtns("timer-select-cpu");
-  // Spawn background particles in game screen
   const gameBg=document.querySelector("#screen-game .game-bg-canvas");
   if(gameBg) spawnParticles(gameBg,25);
   const menuRightBg=document.querySelector("#screen-menu .menu-right-bg");
