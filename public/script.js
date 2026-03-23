@@ -10,7 +10,7 @@ let timerSeconds = 0, timerMyLeft = 0, timerOppLeft = 0,
     timerInterval = null, timerMaxSeconds = 0;
 let movePairs = [], moveFlat = [], boardSnapshots = [],
     historyIndex = -1, isViewingHistory = false;
-let settings = { sound: true, hints: true, theme: "classic" };
+let settings = { sound: true, hints: true, moveHints: true, theme: "classic" };
 
 // ── Undo / Hint ──────────────────────────────────────
 let undosLeft = 2, hintsLeft = 2;
@@ -236,24 +236,171 @@ function burst(type) {
 //  AUDIO
 // ══════════════════════════════════════════════════════
 let audioCtx=null;
-function getAudioCtx() { if(!audioCtx) audioCtx=new(window.AudioContext||window.webkitAudioContext)(); return audioCtx; }
-function tone(freq,type,dur,vol=0.16) {
-  if(!settings.sound) return;
-  try { const ctx=getAudioCtx(),o=ctx.createOscillator(),g=ctx.createGain(); o.connect(g); g.connect(ctx.destination); o.type=type; o.frequency.setValueAtTime(freq,ctx.currentTime); g.gain.setValueAtTime(vol,ctx.currentTime); g.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+dur); o.start(); o.stop(ctx.currentTime+dur); } catch(e) {}
+function getAudioCtx() {
+  if(!audioCtx) audioCtx=new(window.AudioContext||window.webkitAudioContext)();
+  return audioCtx;
 }
+
+// ── Core synth helpers ────────────────────────────────
+function _osc(freq, type, vol, attack, decay, startTime) {
+  try {
+    const ctx=getAudioCtx();
+    const o=ctx.createOscillator(), g=ctx.createGain();
+    o.connect(g); g.connect(ctx.destination);
+    o.type=type; o.frequency.setValueAtTime(freq, startTime);
+    g.gain.setValueAtTime(0.001, startTime);
+    g.gain.linearRampToValueAtTime(vol, startTime+attack);
+    g.gain.exponentialRampToValueAtTime(0.0001, startTime+attack+decay);
+    o.start(startTime); o.stop(startTime+attack+decay+0.05);
+  } catch(e){}
+}
+
+function _noise(dur, freq, Q, vol, startTime) {
+  try {
+    const ctx=getAudioCtx();
+    const buf=ctx.createBuffer(1,Math.ceil(ctx.sampleRate*dur),ctx.sampleRate);
+    const d=buf.getChannelData(0);
+    for(let i=0;i<d.length;i++) d[i]=(Math.random()*2-1);
+    const src=ctx.createBufferSource(); src.buffer=buf;
+    const filt=ctx.createBiquadFilter();
+    filt.type='bandpass'; filt.frequency.value=freq; filt.Q.value=Q;
+    const g=ctx.createGain();
+    g.gain.setValueAtTime(vol, startTime);
+    g.gain.exponentialRampToValueAtTime(0.0001, startTime+dur);
+    src.connect(filt); filt.connect(g); g.connect(ctx.destination);
+    src.start(startTime); src.stop(startTime+dur);
+  } catch(e){}
+}
+
 const SFX = {
-  click()   { tone(900,"sine",0.07,0.1); },
-  select()  { tone(700,"sine",0.1,0.13); },
-  move()    { tone(460,"triangle",0.16,0.12); },
-  capture() { tone(240,"sawtooth",0.13,0.16); setTimeout(()=>tone(160,"sawtooth",0.08,0.1),50); },
-  invalid() { tone(140,"square",0.16,0.09); },
-  check()   { [900,1120,1350].forEach((f,i)=>setTimeout(()=>tone(f,"sine",0.25,0.08),i*50)); },
-  start()   { [261,329,392,523].forEach((f,i)=>setTimeout(()=>tone(f,"sine",0.4,0.08),i*80)); },
-  win()     { [523,659,784,1046,1318].forEach((f,i)=>setTimeout(()=>tone(f,"sine",0.3,0.12),i*100)); },
-  lose()    { [523,415,330,261,220].forEach((f,i)=>setTimeout(()=>tone(f,"triangle",0.3,0.1),i*130)); },
-  tick()    { tone(1300,"sine",0.03,0.04); },
-  hint()    { [660,880].forEach((f,i)=>setTimeout(()=>tone(f,"sine",0.18,0.09),i*80)); },
-  undo()    { tone(440,"sine",0.2,0.1); setTimeout(()=>tone(330,"sine",0.15,0.08),100); },
+  // Button tap — punchy click with body
+  click() {
+    if(!settings.sound) return;
+    const ctx=getAudioCtx(), t=ctx.currentTime;
+    _osc(1400,'square',0.55,0.003,0.07,t);
+    _osc(600,'sine',0.35,0.002,0.06,t);
+    _noise(0.05,4000,6,0.5,t);
+  },
+
+  // Piece lift — sharp pick-up click
+  select() {
+    if(!settings.sound) return;
+    const ctx=getAudioCtx(), t=ctx.currentTime;
+    _osc(800,'square',0.4,0.003,0.08,t);
+    _noise(0.06,2000,5,0.45,t);
+    _osc(1200,'sine',0.2,0.002,0.05,t+0.01);
+  },
+
+  // Piece placed — loud satisfying clack on board
+  move() {
+    if(!settings.sound) return;
+    const ctx=getAudioCtx(), t=ctx.currentTime;
+    // Sharp transient crack
+    _noise(0.04,5000,4,0.9,t);
+    // Mid body thud
+    _noise(0.15,400,3,0.7,t);
+    // Low boom
+    _osc(120,'sine',0.5,0.003,0.18,t);
+    // Settle click
+    _noise(0.04,3000,8,0.35,t+0.03);
+  },
+
+  // Capture — heavy slam
+  capture() {
+    if(!settings.sound) return;
+    const ctx=getAudioCtx(), t=ctx.currentTime;
+    // Big crack
+    _noise(0.05,6000,3,1.0,t);
+    // Heavy low thud
+    _noise(0.20,250,2,0.9,t);
+    _osc(90,'sine',0.6,0.002,0.22,t);
+    // Piece clatter
+    _noise(0.12,1500,5,0.5,t+0.04);
+    _osc(320,'triangle',0.3,0.002,0.12,t+0.04);
+    // Debris settle
+    _noise(0.10,800,4,0.25,t+0.10);
+  },
+
+  // Invalid — hard reject thud
+  invalid() {
+    if(!settings.sound) return;
+    const ctx=getAudioCtx(), t=ctx.currentTime;
+    _osc(180,'sawtooth',0.6,0.003,0.18,t);
+    _noise(0.15,300,2,0.6,t);
+    _osc(120,'square',0.3,0.002,0.12,t+0.02);
+  },
+
+  // Check — loud three-note alarm
+  check() {
+    if(!settings.sound) return;
+    const ctx=getAudioCtx(), t=ctx.currentTime;
+    [[880,0],[1100,0.11],[1320,0.22]].forEach(([f,d])=>{
+      _osc(f,'square',0.5,0.005,0.14,t+d);
+      _osc(f*0.5,'sine',0.3,0.003,0.16,t+d);
+      _noise(0.06,f*3,8,0.4,t+d);
+    });
+  },
+
+  // Game start — bold fanfare arpeggio
+  start() {
+    if(!settings.sound) return;
+    const ctx=getAudioCtx(), t=ctx.currentTime;
+    [[261,0,0.20],[329,0.10,0.18],[392,0.20,0.18],[523,0.30,0.22],[659,0.42,0.30]].forEach(([f,d,dec])=>{
+      _osc(f,'square',0.40,0.006,dec,t+d);
+      _osc(f*2,'sine',0.15,0.004,dec*0.8,t+d);
+    });
+  },
+
+  // Win — triumphant fanfare
+  win() {
+    if(!settings.sound) return;
+    const ctx=getAudioCtx(), t=ctx.currentTime;
+    [[523,0,0.18],[659,0.14,0.18],[784,0.28,0.18],[523,0.44,0.10],
+     [784,0.54,0.12],[1046,0.66,0.45]].forEach(([f,d,dec])=>{
+      _osc(f,'square',0.42,0.006,dec,t+d);
+      _osc(f*2,'sine',0.14,0.004,dec,t+d);
+    });
+    // Bell shimmer on final note
+    [[1046,0.66],[1319,0.72],[1568,0.78]].forEach(([f,d])=>{
+      _osc(f,'sine',0.18,0.004,0.4,t+d);
+    });
+  },
+
+  // Lose — heavy descending dirge
+  lose() {
+    if(!settings.sound) return;
+    const ctx=getAudioCtx(), t=ctx.currentTime;
+    [[523,0,0.26],[466,0.20,0.26],[415,0.42,0.26],[370,0.66,0.40]].forEach(([f,d,dec])=>{
+      _osc(f,'square',0.38,0.006,dec,t+d);
+      _osc(f*0.5,'sine',0.2,0.004,dec,t+d);
+    });
+  },
+
+  // Clock tick — sharp hi-hat crack
+  tick() {
+    if(!settings.sound) return;
+    const ctx=getAudioCtx(), t=ctx.currentTime;
+    _noise(0.04,8000,12,0.35,t);
+    _noise(0.02,4000,6,0.2,t);
+  },
+
+  // Hint — two clear bell tones
+  hint() {
+    if(!settings.sound) return;
+    const ctx=getAudioCtx(), t=ctx.currentTime;
+    _osc(1046,'sine',0.45,0.005,0.28,t);
+    _osc(1319,'sine',0.38,0.004,0.26,t+0.16);
+    _noise(0.04,3000,10,0.2,t);
+  },
+
+  // Undo — descending two-tone thunk
+  undo() {
+    if(!settings.sound) return;
+    const ctx=getAudioCtx(), t=ctx.currentTime;
+    _osc(660,'square',0.45,0.004,0.14,t);
+    _osc(440,'square',0.40,0.004,0.16,t+0.14);
+    _noise(0.08,1000,5,0.35,t);
+  },
 };
 function playClick() { SFX.click(); }
 
@@ -267,6 +414,7 @@ function applySettings() {
   document.querySelectorAll(".tsw").forEach(s=>s.classList.toggle("active",s.dataset.theme===settings.theme));
   document.getElementById("setting-sound").checked=settings.sound;
   document.getElementById("setting-hints").checked=settings.hints;
+  const mhEl=document.getElementById("setting-move-hints"); if(mhEl) mhEl.checked=settings.moveHints;
   showHints=settings.hints;
   const sb=document.getElementById("sound-btn"); if(sb) sb.textContent=settings.sound?"🔊 Sound":"🔇 Sound";
 }
@@ -274,6 +422,7 @@ function openSettings()  { document.getElementById("settings-overlay").classList
 function closeSettings() { SFX.click(); document.getElementById("settings-overlay").classList.add("hidden"); }
 function onSoundToggle(el)  { settings.sound=el.checked; saveSettings(); const sb=document.getElementById("sound-btn"); if(sb) sb.textContent=settings.sound?"🔊 Sound":"🔇 Sound"; if(settings.sound) SFX.click(); }
 function onHintsToggle(el)  { settings.hints=el.checked; showHints=settings.hints; saveSettings(); renderBoard(board); }
+function onMoveHintsToggle(el) { settings.moveHints=el.checked; saveSettings(); legalMovesCache=[]; selected=null; renderBoard(board); }
 
 // setTheme — fixed: no innerHTML wipe, just update attribute + swatches
 function setTheme(t) {
@@ -579,6 +728,7 @@ function buildLabels() {
 function renderBoard(bd, overrideCheck) {
   const el=document.getElementById("board"); el.innerHTML="";
   const chk=overrideCheck!==undefined?overrideCheck:checkSquare;
+  const legalSet=new Set(legalMovesCache.map(m=>m.row*8+m.col));
   const rows=myColor==="black"?[...Array(8).keys()].reverse():[...Array(8).keys()];
   const cols=myColor==="black"?[...Array(8).keys()].reverse():[...Array(8).keys()];
   rows.forEach(r=>cols.forEach(c=>{
@@ -592,6 +742,16 @@ function renderBoard(bd, overrideCheck) {
     if(selected&&selected.row===r&&selected.col===c) sq.classList.add("selected");
     if(chk&&r===chk.row&&c===chk.col) sq.classList.add("in-check");
 
+    if(settings.moveHints&&legalSet.has(r*8+c)){
+      const target=bd[r][c];
+      if(target&&target!==' ') {
+        sq.classList.add("hint-capture");
+        const bl=document.createElement("span"); bl.className="cap-tl"; sq.appendChild(bl);
+        const br=document.createElement("span"); br.className="cap-br"; sq.appendChild(br);
+      } else {
+        const dot=document.createElement("div"); dot.className="move-dot"; sq.appendChild(dot);
+      }
+    }
     const piece=bd[r][c];
     if(piece&&piece!==" "){
       const span=document.createElement("span");
@@ -690,7 +850,7 @@ function onSquareClick(row, col) {
     if(piece&&piece!==' '){
       const isW=piece===piece.toUpperCase();
       const isOwn=(myColor==='white'&&isW)||(myColor==='black'&&!isW);
-      if(isOwn){ SFX.select(); selected={row,col}; legalMovesCache=[]; renderBoard(board); return; }
+      if(isOwn){ SFX.select(); selected={row,col}; legalMovesCache=settings.moveHints?getLegalDestinations(board,row,col,myColor,clientGameState):[]; renderBoard(board); return; }
     }
     const fromRow=selected.row,fromCol=selected.col;
     const isCapture=piece&&piece!==" ";
@@ -704,7 +864,7 @@ function onSquareClick(row, col) {
     if(myColor==="white"&&piece!==piece.toUpperCase()) return;
     if(myColor==="black"&&piece===piece.toUpperCase()) return;
     SFX.select(); selected={row,col};
-    legalMovesCache=[];
+    legalMovesCache=settings.moveHints?getLegalDestinations(board,row,col,myColor,clientGameState):[];
     renderBoard(board);
   }
 }

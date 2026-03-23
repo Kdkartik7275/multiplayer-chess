@@ -252,6 +252,7 @@
           <div class="board-wrap">
             <div class="board-col">
               <div id="board"></div>
+              <div class="coord-row" id="file-labels"></div>
             </div>
           </div>
 
@@ -316,6 +317,13 @@
           <label class="toggle"><input type="checkbox" id="setting-hints" checked onchange="onHintsToggle(this)" /><span class="tgl-track"><span class="tgl-thumb"></span></span></label>
         </div>
 
+        <div class="setting-row">
+          <div class="sr-left">
+            <div class="sr-icon">🎯</div>
+            <div class="sr-body"><div class="sr-name">Move Hints</div><div class="sr-desc">Show legal moves on select</div></div>
+          </div>
+          <label class="toggle"><input type="checkbox" id="setting-move-hints" checked onchange="onMoveHintsToggle(this)" /><span class="tgl-track"><span class="tgl-thumb"></span></span></label>
+        </div>
         <div class="setting-row col">
           <div class="sr-left">
             <div class="sr-icon">🎨</div>
