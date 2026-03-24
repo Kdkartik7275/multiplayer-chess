@@ -73,6 +73,14 @@
                 </div>
                 <div class="pc-arrow">›</div>
               </button>
+              <button class="play-card arcade-card" onclick="playClick(); showArcadeWorlds();">
+                <div class="pc-icon">🏆</div>
+                <div class="pc-body">
+                  <div class="pc-title">Arcade <span class="new-badge">NEW</span></div>
+                  <div class="pc-desc">50 levels — survive without a piece</div>
+                </div>
+                <div class="pc-arrow">›</div>
+              </button>
             </div>
             <div class="menu-utils">
               <button class="util-btn" onclick="playClick(); openSettings();">⚙ Settings</button>
@@ -131,6 +139,46 @@
       </div>
     </div>
 
+    <!-- ══════════════ ARCADE WORLD SELECT ══════════════ -->
+    <div id="screen-arcade" class="screen">
+      <div class="bg-canvas"></div>
+      <div class="grid-overlay"></div>
+      <div class="vignette"></div>
+      <div class="arcade-root">
+        <div class="arcade-header">
+          <button class="back-link" onclick="playClick(); switchScreen('screen-arcade','screen-menu');">
+            <span class="back-arrow">←</span> Back
+          </button>
+          <div class="arcade-title-wrap">
+            <div class="arcade-crown">🏆</div>
+            <h1 class="arcade-title">Arcade</h1>
+            <p class="arcade-sub">Choose a world</p>
+          </div>
+        </div>
+        <div class="arcade-worlds" id="arcade-worlds"></div>
+      </div>
+    </div>
+
+    <!-- ══════════════ ARCADE LEVEL SELECT ══════════════ -->
+    <div id="screen-levels" class="screen">
+      <div class="bg-canvas"></div>
+      <div class="grid-overlay"></div>
+      <div class="vignette"></div>
+      <div class="arcade-root">
+        <div class="arcade-header">
+          <button class="back-link" onclick="playClick(); switchScreen('screen-levels','screen-arcade');">
+            <span class="back-arrow">←</span> Back
+          </button>
+          <div class="arcade-title-wrap">
+            <div class="arcade-crown" id="level-world-icon">🏘</div>
+            <h1 class="arcade-title" id="level-world-name">Village</h1>
+            <p class="arcade-sub">Select a level</p>
+          </div>
+        </div>
+        <div class="level-grid" id="level-grid"></div>
+      </div>
+    </div>
+
     <!-- ══════════════ GAME ══════════════ -->
     <div id="screen-game" class="screen">
       <div class="game-bg-canvas"></div>
@@ -145,6 +193,15 @@
               <span class="sb-title">Royal Chess</span>
             </div>
             <span class="sb-mode" id="mode-tag">vs Computer</span>
+          </div>
+
+          <!-- ARCADE CONSTRAINT BANNER -->
+          <div id="arcade-constraint-bar" class="arcade-constraint-bar" style="display:none">
+            <div class="acb-icon" id="acb-icon">♛</div>
+            <div class="acb-body">
+              <div class="acb-title" id="acb-title">Missing: Queen</div>
+              <div class="acb-hint" id="acb-hint">Win without your queen</div>
+            </div>
           </div>
 
           <div class="sb-card" id="opponent-card">
@@ -183,7 +240,6 @@
             </div>
           </div>
 
-          <!-- Sidebar controls -->
           <div class="sb-controls">
             <button class="sb-btn" onclick="togglePause()" id="pause-btn" title="Pause">
               ⏸<span>Pause</span>
@@ -191,17 +247,14 @@
             <button class="sb-btn" onclick="playClick(); openSettings();" title="Settings">
               ⚙<span>Settings</span>
             </button>
-            <!-- Undo: vs Computer only, 2 uses -->
             <button class="sb-btn" onclick="doUndo()" id="undo-btn" title="Undo Move" style="display:none">
               ↩<span>Undo</span>
               <span class="sb-btn-uses" id="undo-uses">2</span>
             </button>
-            <!-- Hint: vs Computer only, 2 uses -->
             <button class="sb-btn" onclick="doHint()" id="hint-btn" title="Get Hint" style="display:none">
               💡<span>Hint</span>
               <span class="sb-btn-uses" id="hint-uses">2</span>
             </button>
-            <!-- Draw: multiplayer only -->
             <button class="sb-btn info" onclick="offerDraw()" id="draw-btn" title="Offer Draw" style="display:none">
               ½<span>Draw</span>
             </button>
@@ -210,7 +263,6 @@
 
         <!-- CENTER -->
         <main class="game-center">
-          <!-- Mobile topbar -->
           <div class="mob-bar">
             <div class="mob-brand">
               <span>♟</span>
@@ -220,14 +272,18 @@
             <div class="mob-btns">
               <button class="mob-btn" onclick="togglePause()" id="pause-btn-mobile">⏸</button>
               <button class="mob-btn" onclick="playClick(); openSettings();">⚙</button>
-              <!-- Mobile undo/hint: vs Computer only -->
               <button class="mob-btn" onclick="doUndo()" id="undo-btn-mobile" title="Undo" style="display:none">↩</button>
               <button class="mob-btn" onclick="doHint()" id="hint-btn-mobile" title="Hint" style="display:none">💡</button>
               <button class="mob-btn info" onclick="offerDraw()" id="draw-btn-mobile" style="display:none">½</button>
             </div>
           </div>
 
-          <!-- Mobile opponent -->
+          <!-- Mobile arcade constraint -->
+          <div id="arcade-constraint-mobile" class="arcade-constraint-mobile" style="display:none">
+            <span class="acm-icon" id="acm-icon">♛</span>
+            <span class="acm-text" id="acm-text">Missing: Queen</span>
+          </div>
+
           <div class="mob-player opp" id="opponent-row">
             <div class="mob-dot" id="opp-dot-mobile"></div>
             <div class="mob-av black-av" id="opp-avatar-mobile">♚</div>
@@ -241,14 +297,12 @@
             </div>
           </div>
 
-          <!-- Mobile status -->
           <div id="status-banner-mobile" class="mob-banner" style="display:none"></div>
           <div id="thinking-bar-mobile" class="mob-thinking" style="display:none">
             <div class="think-dots"><i></i><i></i><i></i></div>
             <span>Engine thinking…</span>
           </div>
 
-          <!-- THE BOARD -->
           <div class="board-wrap">
             <div class="board-col">
               <div id="board"></div>
@@ -256,7 +310,6 @@
             </div>
           </div>
 
-          <!-- Mobile you -->
           <div class="mob-player me" id="my-row">
             <div class="mob-dot" id="my-dot-mobile"></div>
             <div class="mob-av white-av" id="my-avatar-mobile">♔</div>
@@ -287,9 +340,20 @@
           <div class="rs-div"></div>
           <div class="rs"><div class="rs-val" id="stat-color">—</div><div class="rs-key">Your Side</div></div>
         </div>
-        <div class="result-btns">
-          <button class="btn-primary" onclick="location.reload()">⚔ Play Again</button>
-          <button class="btn-ghost" onclick="goToMenu()">↩ Main Menu</button>
+        <!-- Arcade next-level button (hidden for non-arcade) -->
+        <div id="arcade-result-actions" style="display:none">
+          <div class="arcade-level-badge" id="arcade-level-badge">Level 1</div>
+          <div class="result-btns">
+            <button class="btn-primary" id="arcade-next-btn" onclick="goToNextArcadeLevel()">Next Level →</button>
+            <button class="btn-ghost" onclick="goToArcadeLevels()">↩ Level Select</button>
+            <button class="btn-ghost" onclick="goToMenu()">⌂ Main Menu</button>
+          </div>
+        </div>
+        <div id="normal-result-actions">
+          <div class="result-btns">
+            <button class="btn-primary" onclick="location.reload()">⚔ Play Again</button>
+            <button class="btn-ghost" onclick="goToMenu()">↩ Main Menu</button>
+          </div>
         </div>
       </div>
       <div id="result-particles"></div>
@@ -316,7 +380,6 @@
           </div>
           <label class="toggle"><input type="checkbox" id="setting-hints" checked onchange="onHintsToggle(this)" /><span class="tgl-track"><span class="tgl-thumb"></span></span></label>
         </div>
-
         <div class="setting-row">
           <div class="sr-left">
             <div class="sr-icon">🎯</div>
